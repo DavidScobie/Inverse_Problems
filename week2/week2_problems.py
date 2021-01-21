@@ -19,9 +19,10 @@ for i in range (n):
     end.append(np.exp(-((x[i]-mu)**2)/(2*((std)**2))))
     g.append(end[i]*start)
 
-# plt.xlabel("x")
-# plt.ylabel("G(x)")
-# plt.plot(x,g)
+plt.figure(0)
+plt.xlabel("x")
+plt.ylabel("G(x)")
+plt.plot(x,g)
 
 A_big=[]
 for i in range (n):
@@ -96,11 +97,12 @@ diagW = np.diag(W)
 VP=[]
 WP=[]
 
+plt.figure(1)
+plt.semilogy(diagW)
+plt.xlabel("column number")
+plt.ylabel("log(W)")
 
-# plt.semilogy(diagW)
-# plt.xlabel("column number")
-# plt.ylabel("log(W)")
-
+plt.figure(2)
 fig, axs = plt.subplots(3, 3)
 
 col=[]
@@ -109,30 +111,32 @@ for i in range (9):
         col.append(V[j][i])
  
     ind = round(3*((i/3)-(np.floor(i/3))))
-    pos1 = ind-1
-    if ind == 0:
-        pos1 = 2
-    
-    pos0 = int(np.floor(i/3))
-
-    # print(pos0)
-    print(ind)
-  
+    pos1 = ind-1   
+    pos0 = int(np.floor(i/3)) 
     axs[pos0, ind].plot(col)
+    Column=i+1
+    axs[pos0, ind].set_title("Column of V =%1.0f" %Column)   
     col=[]
- 
+for ax in axs.flat:
+    ax.set(xlabel='', ylabel='V')
 
+plt.figure(3)
+fig, axs = plt.subplots(3, 3)
 
-# #first 9 columns
-# for i in range (9):
-#     VP.append(diagV[i])
-    
-# #last 9 columns
-# for i in range (9):
-#     VP.append(diagV[i+91])
-      
-# print(VP)
-
+col=[]
+for i in range (9):
+    column=i+91
+    for j in range (n):
+        col.append(V[j][column])   
+    ind = round(3*((i/3)-(np.floor(i/3))))
+    pos1 = ind-1   
+    pos0 = int(np.floor(i/3)) 
+    axs[pos0, ind].plot(col)
+    Column=column+1
+    axs[pos0, ind].set_title("Column of V =%1.0f" %Column)   
+    col=[]
+for ax in axs.flat:
+    ax.set(xlabel='', ylabel='V')
 
 
 plt.show()
