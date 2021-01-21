@@ -49,7 +49,7 @@ np.fill_diagonal(W, W1)
 print(A)
 # print(U)
 print(W)
-# print(VT)
+print(VT)
 
 A1=np.matmul(U,W)
 A2=np.matmul(A1,VT)
@@ -80,8 +80,15 @@ print(W_dag)
 W_Wdag = np.matmul(W,W_dag)
 print(W_Wdag)
 
+V=VT.transpose()
 
+A_dag_1 = np.matmul(V,W_dag)
+A_dag = np.matmul(A_dag_1,U.transpose())
+print(A_dag)
 
+#as can be seen, the check minus A dagger is approximately zero everywhere, as required
+check = (np.linalg.pinv([A]))
+print(check-A_dag)
 
 # plt.show()
 
