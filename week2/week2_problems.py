@@ -89,7 +89,7 @@ A_dag = np.matmul(A_dag_1,U.transpose())
 
 #as can be seen, the check minus A dagger is approximately zero everywhere, as required
 check = (np.linalg.pinv([A]))
-print(np.max(check-A_dag))
+# print(np.max(check-A_dag))
 
 diagV = np.diag(V)
 diagW = np.diag(W)
@@ -97,14 +97,30 @@ VP=[]
 WP=[]
 
 
-plt.semilogy(diagW)
-plt.xlabel("column number")
-plt.ylabel("log(W)")
+# plt.semilogy(diagW)
+# plt.xlabel("column number")
+# plt.ylabel("log(W)")
 
-col1=[]
-for i in range (n):
-    col1.append(V[i][0])
-plt.plot(col1)   
+fig, axs = plt.subplots(3, 3)
+
+col=[]
+for i in range (9):
+    for j in range (n):
+        col.append(V[j][i])
+ 
+    ind = round(3*((i/3)-(np.floor(i/3))))
+    pos1 = ind-1
+    if ind == 0:
+        pos1 = 2
+    
+    pos0 = int(np.floor(i/3))
+
+    # print(pos0)
+    print(ind)
+  
+    axs[pos0, ind].plot(col)
+    col=[]
+ 
 
 
 # #first 9 columns
