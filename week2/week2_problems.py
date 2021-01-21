@@ -4,7 +4,7 @@ import cv2
 import scipy as sp
 from scipy.sparse import spdiags
 
-n=4
+n=100
 x = np.linspace(-1, 1, num=n)
 
 del_n = 2/(n-1)
@@ -19,9 +19,9 @@ for i in range (n):
     end.append(np.exp(-((x[i]-mu)**2)/(2*((std)**2))))
     g.append(end[i]*start)
 
-plt.xlabel("x")
-plt.ylabel("G(x)")
-plt.plot(x,g)
+# plt.xlabel("x")
+# plt.ylabel("G(x)")
+# plt.plot(x,g)
 
 A_big=[]
 for i in range (n):
@@ -46,19 +46,19 @@ U, W1, VT = np.linalg.svd(A)
 W = np.zeros((n, n),float)
 np.fill_diagonal(W, W1)
 
-print(A)
+# print(A)
 # print(U)
-print(W)
-print(VT)
+# print(W)
+# print(VT)
 
 A1=np.matmul(U,W)
 A2=np.matmul(A1,VT)
-print(A2)
+# print(A2)
 
 normA = np.linalg.norm(A)
 normB = np.linalg.norm(A2)
-print(normA)
-print(normB)
+# print(normA)
+# print(normB)
 
 # W_dag = np.full((n, n), 1/W[0][0])
 # print(W_dag)
@@ -71,24 +71,53 @@ for i in range (n):
     for j in range (n):
         if i == j:
             W_dag_diag.append(1/(W[i][i]))
-print(W_dag_diag)
+# print(W_dag_diag)
 
 W_dag = np.zeros((n, n),float)
 np.fill_diagonal(W_dag,W_dag_diag)
-print(W_dag)
+# print(W_dag)
 
 W_Wdag = np.matmul(W,W_dag)
-print(W_Wdag)
+# print(W_Wdag)
 
 V=VT.transpose()
+# print(V)
 
 A_dag_1 = np.matmul(V,W_dag)
 A_dag = np.matmul(A_dag_1,U.transpose())
-print(A_dag)
+# print(A_dag)
 
 #as can be seen, the check minus A dagger is approximately zero everywhere, as required
 check = (np.linalg.pinv([A]))
-print(check-A_dag)
+print(np.max(check-A_dag))
 
-# plt.show()
+diagV = np.diag(V)
+diagW = np.diag(W)
+VP=[]
+WP=[]
+
+
+plt.semilogy(diagW)
+plt.xlabel("column number")
+plt.ylabel("log(W)")
+
+col1=[]
+for i in range (n):
+    col1.append(V[i][0])
+plt.plot(col1)   
+
+
+# #first 9 columns
+# for i in range (9):
+#     VP.append(diagV[i])
+    
+# #last 9 columns
+# for i in range (9):
+#     VP.append(diagV[i+91])
+      
+# print(VP)
+
+
+
+plt.show()
 
