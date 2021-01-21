@@ -41,5 +41,29 @@ cv2.imwrite("Aimage3.png",Aimg)
 # Aimg = cv2.applyColorMap(Atmp, cv2.COLORMAP_JET)
 # cv2.imwrite("Aimage3.png",Aimg)
 
+U, W1, V = np.linalg.svd(A)
+
+W = np.zeros((n, n),float)
+np.fill_diagonal(W, W1)
+
+print(A)
+# print(U)
+# print(W)
+# print(V)
+
+# A1= U*W*(V.transpose())
+# A1=np.dot(U,W,V.transpose())
+A1=np.matmul(U,W)
+A2=np.matmul(A1,V)
+print(A2)
+
+normA = np.linalg.norm(A)
+normB = np.linalg.norm(A2)
+print(normA)
+print(normB)
+
+
+
+
 plt.show()
 
