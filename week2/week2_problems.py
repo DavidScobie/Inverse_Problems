@@ -1,8 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import cv2
+import scipy as sp
+from scipy.sparse import spdiags
 
-n=100
+n=4
 x = np.linspace(-1, 1, num=n)
 
 del_n = 2/(n-1)
@@ -34,27 +36,23 @@ Atmp = np.array(np.ceil(A/np.max(A)*256), dtype = np.uint8)
 Aimg = cv2.applyColorMap(Atmp, cv2.COLORMAP_JET)
 cv2.imwrite("Aimage3.png",Aimg)
 
-# B = [[1,2,3],[4,5,6]]
-# print(B)
 
 # Atmp = np.array(np.ceil(B/np.max(B)*256), dtype = np.uint8)
 # Aimg = cv2.applyColorMap(Atmp, cv2.COLORMAP_JET)
 # cv2.imwrite("Aimage3.png",Aimg)
 
-U, W1, V = np.linalg.svd(A)
+U, W1, VT = np.linalg.svd(A)
 
 W = np.zeros((n, n),float)
 np.fill_diagonal(W, W1)
 
 print(A)
 # print(U)
-# print(W)
-# print(V)
+print(W)
+# print(VT)
 
-# A1= U*W*(V.transpose())
-# A1=np.dot(U,W,V.transpose())
 A1=np.matmul(U,W)
-A2=np.matmul(A1,V)
+A2=np.matmul(A1,VT)
 print(A2)
 
 normA = np.linalg.norm(A)
@@ -62,8 +60,28 @@ normB = np.linalg.norm(A2)
 print(normA)
 print(normB)
 
+# W_dag = np.full((n, n), 1/W[0][0])
+# print(W_dag)
+
+# spdiags(W_dag, np.array([0, -1, 2,1]), n, n).toarray()
+# print(W_dag)
+
+W_dag_diag=[]
+for i in range (n):
+    for j in range (n):
+        if i == j:
+            W_dag_diag.append(1/(W[i][i]))
+print(W_dag_diag)
+
+W_dag = np.zeros((n, n),float)
+np.fill_diagonal(W_dag,W_dag_diag)
+print(W_dag)
+
+W_Wdag = np.matmul(W,W_dag)
+print(W_Wdag)
 
 
 
-plt.show()
+
+# plt.show()
 
