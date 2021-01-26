@@ -38,10 +38,6 @@ Aimg = cv2.applyColorMap(Atmp, cv2.COLORMAP_JET)
 cv2.imwrite("Aimage3.png",Aimg)
 
 
-# Atmp = np.array(np.ceil(B/np.max(B)*256), dtype = np.uint8)
-# Aimg = cv2.applyColorMap(Atmp, cv2.COLORMAP_JET)
-# cv2.imwrite("Aimage3.png",Aimg)
-
 U, W1, VT = np.linalg.svd(A)
 
 W = np.zeros((n, n),float)
@@ -61,11 +57,6 @@ normB = np.linalg.norm(A2)
 # print(normA)
 # print(normB)
 
-# W_dag = np.full((n, n), 1/W[0][0])
-# print(W_dag)
-
-# spdiags(W_dag, np.array([0, -1, 2,1]), n, n).toarray()
-# print(W_dag)
 
 W_dag_diag=[]
 for i in range (n):
