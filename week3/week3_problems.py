@@ -18,7 +18,7 @@ l=-0.7*np.ones((1,40))
 f=np.hstack((k,l)).reshape((200, 1))
 x = np.linspace(-1, 1, num=200)
 
-plt.figure(0)
+# plt.figure(0)
 plt.xlabel("x")
 plt.ylabel("f")
 # plt.plot(x,f)
@@ -41,9 +41,25 @@ Aimg = cv2.applyColorMap(Atmp, cv2.COLORMAP_JET)
 cv2.imwrite("Aimage3.png",Aimg)
 
 U, W1, VT = np.linalg.svd(A)
-plt.plot(W1)
+# plt.plot(W1)
 
 print(np.var(W1))
 
-con = np.convolve()
+con=np.matmul(A,f)
+plt.figure(1)
+plt.plot(x,con)
+plt.xlabel("x")
+plt.ylabel("A*f")
+
+Ff = np.fft.fftshift(np.fft.fft(np.fft.fftshift(f)))
+print(Ff.shape)
+FA = np.fft.fftshift(np.fft.fft(np.fft.fftshift(A)))
+print(FA.shape)
+Fcon=FA*Ff
+# Fcon = np.matmul(FA,Ff)
+con2 = np.real(np.fft.fftshift(np.fft.ifft(np.fft.fftshift(Fcon))))
+print(con2.shape)
+plt.figure(2)
+plt.plot(x,np.sum(con2, axis=0))
+
 plt.show()
