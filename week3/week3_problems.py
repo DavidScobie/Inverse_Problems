@@ -45,14 +45,17 @@ plt.figure(1)
 plt.title('Singular values of A')
 plt.plot(W1)
 
+#c
 print(np.var(W1))
 
+#d
 con=np.matmul(A,f)
 plt.figure(2)
 plt.plot(x,con)
 plt.xlabel("x")
 plt.ylabel("A*f")
 
+#e
 Ff = np.fft.fftshift(np.fft.fft(np.fft.fftshift(f)))
 FA = np.fft.fftshift(np.fft.fft(np.fft.fftshift(A)))
 Fcon=FA*Ff
@@ -64,22 +67,15 @@ plt.plot(x,np.sum(con2, axis=0))
 Arep = np.tile(A, (3,3))
 s=np.array(A)
 sarr = np.array(Arep)
-sarr[340:460,140:260] = s[40:160,40:160]
-sarr[140:260,340:460] = s[40:160,40:160]
-# plt.imshow(sarr)
+sarr[round(1.7*n):round(2.3*n),round(0.7*n):round(1.3*n)] = s[round(0.2*n):round(0.8*n),round(0.2*n):round(0.8*n)]
+sarr[round(0.7*n):round(1.3*n),round(1.7*n):round(2.3*n)] = s[round(0.2*n):round(0.8*n),round(0.2*n):round(0.8*n)]
 
-A_bound = sarr[200:400,200:400]
-# plt.imshow(A_bound)
+A_bound = sarr[n:2*n,n:2*n]
 
 FA_bound = np.fft.fftshift(np.fft.fft(np.fft.fftshift(A_bound)))
-# print(FA.shape)
 Fconbou=FA_bound*Ff
-# Fcon = np.matmul(FA,Ff)
 con2bou = np.real(np.fft.fftshift(np.fft.ifft(np.fft.fftshift(Fconbou))))
-# print(con2.shape)
-plt.figure(3)
+plt.figure(4)
 plt.plot(x,np.sum(con2bou, axis=0))
-
-
 
 plt.show()
