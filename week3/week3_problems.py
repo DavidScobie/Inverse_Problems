@@ -1,6 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import cv2
+from scipy.optimize import curve_fit
+from scipy import asarray as ar,exp
 
 #a
 n=200
@@ -43,10 +45,30 @@ cv2.imwrite("Aimage3.png",Aimg)
 U, W1, VT = np.linalg.svd(A)
 plt.figure(1)
 plt.title('Singular values of A')
-plt.plot(W1)
+plt.plot(W1,label='Singular values')
+plt.legend()
+#c  
+ind = np.linspace(1,n,n)                        
+mean = 0                  
+sigma = sum(W1*(ind-mean)**2)/n 
+# print(mean)
+print(sigma)
 
-#c
-print(np.var(W1))
+del_n = 1
+
+# start = del_n/((np.sqrt(2*np.pi))*sigma)
+
+end=[]
+g=[]
+for i in range (n):
+    end.append(np.exp(-((ind[i]-mean)**2)/(2*((sigma)**2))))
+    g.append(end[i])
+ 
+plt.plot(g,label='fit')  
+plt.legend()
+
+print(float(sigma)**2)
+# print(np.var(W1))
 
 #d
 con=np.matmul(A,f)
