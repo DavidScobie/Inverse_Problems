@@ -29,7 +29,7 @@ plt.plot(x,f)
 
 #b
 del_n=2/n
-std = 0.05
+std = 0.2
 start = del_n/(((2*np.pi)**0.5)*std)
 A_big=[]
 for i in range (n):
@@ -47,6 +47,7 @@ plt.figure(1)
 plt.title('Singular values of A')
 plt.plot(W1,label='Singular values')
 plt.legend()
+
 #c  
 ind = np.linspace(1,n,n)                        
 mean = 0                  
@@ -55,8 +56,6 @@ sigma = sum(W1*(ind-mean)**2)/n
 print(sigma)
 
 del_n = 1
-
-# start = del_n/((np.sqrt(2*np.pi))*sigma)
 
 end=[]
 g=[]
