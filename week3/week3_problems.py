@@ -45,8 +45,26 @@ plt.figure(1)
 plt.title('Singular values of A')
 plt.plot(W1)
 
-#c
-print(np.var(W1))
+# #c
+# print(np.var(W1))
+#c  
+print(n)
+ind = np.linspace(1,n,n)                        
+mean = 0                  
+sigma = sum(W1*(ind-mean)**2)/n 
+
+del_n = 1
+
+end=[]
+g=[]
+for i in range (n):
+    end.append(np.exp(-((ind[i]-mean)**2)/(2*((sigma)**2))))
+    g.append(end[i])
+ 
+plt.plot(g,label='fit')  
+plt.legend()
+
+print('variance:',float(sigma)**2)
 
 #d
 con=np.matmul(A,f)
