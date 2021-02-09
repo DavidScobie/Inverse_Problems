@@ -60,9 +60,24 @@ def M_f(f):
     bottom = (alpha**0.5)*np.identity(256).ravel()
     return np.vstack([top,bottom])
 
-# def MT_b(b):
-# rmatvec = MT_b
-A = LinearOperator(((256**2)*2,256**2),matvec = M_f)
+# def MT_b(f):
+#     unr_l = gaussian_filter(f,sigma).ravel()
+#     left = np.reshape(unr_l,(256**2,1))
+#     unr_r = (alpha**0.5)*np.identity(256).ravel()
+#     right = np.reshape(unr_r,(256**2,1))
+#     return np.hstack((left,right))
+
+def MT_b(b):
+    unr_l = gaussian_filter(np.reshape(b[0:65536],(256,256)),sigma).ravel()
+    # left = np.reshape(unr_l,((256**2)*2,1))
+    return unr_l
+    # unr_r = (alpha**0.5)*np.identity(256*2).ravel()
+    # right = np.reshape(unr_r,((256**2)*2,1))
+    # return np.hstack((left,right))
+
+    
+
+A = LinearOperator(((256**2)*2,256**2),matvec = M_f, rmatvec = MT_b)
 print(A.shape)
 siz = g.size
 print(siz)
@@ -70,8 +85,9 @@ b = np.vstack([np.reshape(g,(siz,1)),np.zeros((siz,1))])
 # bottom = (alpha**0.5)*np.identity(256**2)
 lsqrOutput = scipy.sparse.linalg.lsqr(A,b, x0 = f.ravel())
 
-
-
+plt.figure(3)
+plt.imshow(np.reshape(lsqrOutput[0],(256,256)),cmap='gray')
+plt.show()
 
 # print(np.size(A1))
 
