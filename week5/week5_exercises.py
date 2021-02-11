@@ -8,6 +8,15 @@ from scipy.ndimage.filters import gaussian_filter
 from scipy.sparse.linalg import lsqr
 
 
+class gmres_counter(object):
+    def __init__(self, disp=True):
+        self._disp = disp
+        self.niter = 0
+    def __call__(self, rk=None):
+        self.niter += 1
+        # if self._disp:
+        #     print('iter %3i\trk = %s' % (self.niter, str(rk)))
+
 #a
 img = mpimg.imread('Cameraman256.png')
 f = np.float32(img)
@@ -31,12 +40,18 @@ plt.imshow(g,cmap='gray')
 #c
 alpha = 0.01
 DP=[]
+rsd_sq=[]
+sum_Tik=[]
 
 powers = np.linspace(-6,-3,num=13)
+print(powers)
 alphas = np.exp(powers)
-print(alphas)
+# print(alphas)
 for alpha in (alphas):
     diff = []
+    Tik=[]
+
+    TK1 = lambda s:(s**2)/2
 
     y = lambda f: gaussian_filter(f,sigma)
 
@@ -48,36 +63,38 @@ for alpha in (alphas):
 
     ATg = lambda g: gaussian_filter(np.reshape(g,(256,256)),sigma).ravel()
 
-    class gmres_counter(object):
-        def __init__(self, disp=True):
-            self._disp = disp
-            self.niter = 0
-        def __call__(self, rk=None):
-            self.niter += 1
-            if self._disp:
-                print('iter %3i\trk = %s' % (self.niter, str(rk)))
-
     counter = gmres_counter()
 
     gmresOutput = gmres(A,ATg(g), x0 = f.ravel(), callback=counter)
-    print(counter.niter)
+    # print(counter.niter)
 
     long_f = forig.ravel()
     long_gmres = gmresOutput[0].ravel()
 
     for i in range (256**2):
         diff.append(np.abs(long_f[i]-long_gmres[i]))
+        Tik.append(TK1(long_gmres[i]))
     residual = np.sum(diff)
-    print(residual)
-
+    # print(residual)
+    sum_Tik.append(np.sum(Tik))
+    rsd_sq.append(residual**2)   
     DP.append(((residual**2)/(256**2))-(theta**2))
-print(DP)
+# print(DP)
 
 plt.figure(2)
 plt.imshow(np.reshape(gmresOutput[0],(256,256)),cmap='gray')
-
+print(DP)
 plt.figure(3)
 plt.plot(alphas,DP)
+
+print(sum_Tik)
+print(rsd_sq)
+
+plt.figure(4)
+plt.loglog(rsd_sq,sum_Tik)
+
+plt.figure(5)
+plt.plot(rsd_sq,sum_Tik)
 plt.show()
 
 
