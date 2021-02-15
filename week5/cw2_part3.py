@@ -7,7 +7,7 @@ from scipy.sparse.linalg import LinearOperator
 from scipy.ndimage.filters import gaussian_filter
 from scipy.sparse.linalg import lsqr
 from scipy.sparse import spdiags
-from numpy.linalg import matrix_rank
+from scipy import sparse
 
 
 #a
@@ -30,13 +30,24 @@ plt.imshow(g,cmap='gray')
 
 #3
 
-mid = np.ones([1,256]).flatten()
+mid = np.ones([1,257]).flatten()
 dat=np.array([-mid,mid])
 diags_x = np.array([0,-1])
-D1x = spdiags(dat,diags_x,256,256).toarray()
+D1x = spdiags(dat,diags_x,257,256)
 
-diags_y = np.array([0])
-D1y = spdiags(-mid,diags_y,256,256).toarray()
+D1x2d = sparse.kron(scipy.sparse.identity(256),D1x)
+print(D1x2d.shape)
+
+D1y2d = sparse.kron(D1x,scipy.sparse.identity(256))
+print(D1y2d.shape)
+
+# diags_y = np.array([0])
+# D1y = spdiags(-mid,diags_y,256**2,256**2)
+
+# multip = np.matmul(np.transpose(D1x2d),D1x2d)+np.matmul(np.transpose(D1y2d),D1y2d)
+lap = -((np.transpose(D1x2d)@D1x2d) + (np.transpose(D1y2d)@D1y2d))
+print(lap.shape)
+print(lap)
 
 D = np.concatenate((D1x, D1y))
 
@@ -44,10 +55,7 @@ alpha = 0.1
 
 y = lambda f: gaussian_filter(f,sigma)
 
-# mult = lambda f,D: np.matmul(D,f)
-
-# z = lambda f: gaussian_filter(y(np.reshape(f,(256,256))),sigma).ravel() + alpha*np.matmul(np.transpose(np.reshape(D,(512,256))),np.matmul(np.reshape(D,(512,256)),np.reshape(f,(256,256)))).ravel()
-z = lambda f: 100*np.matmul(np.transpose(np.reshape(D,(512,256))),np.matmul(np.reshape(D,(512,256)),np.reshape(f,(256,256)))).ravel()
+z = lambda f: gaussian_filter(y(np.reshape(f,(256,256))),sigma).ravel() + alpha*np.matmul(np.transpose(np.reshape(D,(512,256))),np.matmul(np.reshape(D,(512,256)),np.reshape(f,(256,256)))).ravel()
 
 A = LinearOperator((256**2,256**2),matvec = z)
 
@@ -96,5 +104,5 @@ plt.figure(3)
 plt.imshow(np.reshape(lsqrOutput[0],(256,256)),cmap='gray')
 
 print(np.reshape(lsqrOutput[0],(256,256))-np.reshape(gmresOutput[0],(256,256)))
-plt.show()
+# plt.show()
 
