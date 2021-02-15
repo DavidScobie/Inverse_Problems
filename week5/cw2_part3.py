@@ -46,16 +46,36 @@ print(D1y2d.shape)
 
 # multip = np.matmul(np.transpose(D1x2d),D1x2d)+np.matmul(np.transpose(D1y2d),D1y2d)
 lap = -((np.transpose(D1x2d)@D1x2d) + (np.transpose(D1y2d)@D1y2d))
-print(lap.shape)
-print(lap)
 
-D = np.concatenate((D1x, D1y))
+A1 = scipy.sparse.identity(256**2)+(0.25*lap)
+# print(A)
+# print(A.shape)
+
+f_sparse = sparse.csr_matrix(np.reshape(f,(256**2,1)))
+print(f_sparse)
+
+# T = np.reshape(1*(A@sparse.csr_matrix(np.reshape(f,(256**2,1))).toarray()),(1,256**2)).ravel()
+# print(T)
+# print(type(T))
+# print(T.shape)
+
+# y = lambda f: gaussian_filter(f,sigma)
+# K = gaussian_filter(y(np.reshape(f,(256,256))),sigma).ravel()
+# print(K)
+# print(type(K))
+# print(K.shape)
+
+# both = T+K
+# print(both)
+
+# print(nut)
 
 alpha = 0.1
 
 y = lambda f: gaussian_filter(f,sigma)
 
-z = lambda f: gaussian_filter(y(np.reshape(f,(256,256))),sigma).ravel() + alpha*np.matmul(np.transpose(np.reshape(D,(512,256))),np.matmul(np.reshape(D,(512,256)),np.reshape(f,(256,256)))).ravel()
+z = lambda f: gaussian_filter(y(np.reshape(f,(256,256))),sigma).ravel() + np.reshape(alpha*(A1@sparse.csr_matrix(np.reshape(f,(256**2,1))).toarray()),(1,256**2)).ravel()
+# z = lambda f: np.reshape(alpha*(A1@sparse.csr_matrix(np.reshape(f,(256**2,1))).toarray()),(1,256**2)).ravel()
 
 A = LinearOperator((256**2,256**2),matvec = z)
 
@@ -74,35 +94,36 @@ class gmres_counter(object):
 
 counter = gmres_counter()
 
-gmresOutput = gmres(A,ATg(g), x0 = f.ravel(), callback=counter)
+gmresOutput = gmres(A,ATg(g), x0 = f.ravel(), callback=counter, maxiter = 200)
 print(counter.niter)
 
 plt.figure(2)
 plt.imshow(np.reshape(gmresOutput[0],(256,256)),cmap='gray')
+plt.show()
 
 
 #d
 
-def M_f(f):
-    top = gaussian_filter(f,sigma).ravel()
-    bottom = (alpha**0.5)*np.reshape(f,(256,256)).ravel()
-    return np.vstack([top,bottom])
+# def M_f(f):
+#     top = gaussian_filter(f,sigma).ravel()
+#     bottom = (alpha**0.5)*np.reshape(f,(256,256)).ravel()
+#     return np.vstack([top,bottom])
 
-def MT_b(b):
-    b1 = np.reshape(b[0:65536],(256,256))
-    b2 = np.reshape(b[65536:],(256,256))
-    return (gaussian_filter(b1,sigma) + np.sqrt(alpha)*b2).ravel()
+# def MT_b(b):
+#     b1 = np.reshape(b[0:65536],(256,256))
+#     b2 = np.reshape(b[65536:],(256,256))
+#     return (gaussian_filter(b1,sigma) + np.sqrt(alpha)*b2).ravel()
     
 
-A = LinearOperator(((256**2)*2,256**2),matvec = M_f, rmatvec = MT_b)
-siz = g.size
-b = np.vstack([np.reshape(g,(siz,1)),np.zeros((siz,1))])
-lsqrOutput = scipy.sparse.linalg.lsqr(A,b, x0 = np.zeros((256,256)).ravel(),atol=1.0e-9)
-print(lsqrOutput[2])
+# A = LinearOperator(((256**2)*2,256**2),matvec = M_f, rmatvec = MT_b)
+# siz = g.size
+# b = np.vstack([np.reshape(g,(siz,1)),np.zeros((siz,1))])
+# lsqrOutput = scipy.sparse.linalg.lsqr(A,b, x0 = np.zeros((256,256)).ravel(),atol=1.0e-9)
+# print(lsqrOutput[2])
 
-plt.figure(3)
-plt.imshow(np.reshape(lsqrOutput[0],(256,256)),cmap='gray')
+# plt.figure(3)
+# plt.imshow(np.reshape(lsqrOutput[0],(256,256)),cmap='gray')
 
-print(np.reshape(lsqrOutput[0],(256,256))-np.reshape(gmresOutput[0],(256,256)))
+# print(np.reshape(lsqrOutput[0],(256,256))-np.reshape(gmresOutput[0],(256,256)))
 # plt.show()
 
