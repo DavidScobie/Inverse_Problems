@@ -47,8 +47,8 @@ print(D1y2d.shape)
 # multip = np.matmul(np.transpose(D1x2d),D1x2d)+np.matmul(np.transpose(D1y2d),D1y2d)
 lap = -((np.transpose(D1x2d)@D1x2d) + (np.transpose(D1y2d)@D1y2d))
 
-A1 = scipy.sparse.identity(256**2)+(0.25*lap)
-# print(A)
+A1 = scipy.sparse.identity(256**2)-(0.25*lap)
+print(A1[500,:])
 # print(A.shape)
 
 f_sparse = sparse.csr_matrix(np.reshape(f,(256**2,1)))
@@ -70,7 +70,7 @@ print(f_sparse)
 
 # print(nut)
 
-alpha = 0.1
+alpha = 1.5
 
 y = lambda f: gaussian_filter(f,sigma)
 
@@ -94,7 +94,8 @@ class gmres_counter(object):
 
 counter = gmres_counter()
 
-gmresOutput = gmres(A,ATg(g), x0 = f.ravel(), callback=counter, maxiter = 200)
+# gmresOutput = gmres(A,ATg(g), x0 = f.ravel(), callback=counter, maxiter = 21)
+gmresOutput = gmres(A,ATg(g), x0 = np.zeros((256,256)).ravel(), callback=counter, maxiter = 6)
 print(counter.niter)
 
 plt.figure(2)
