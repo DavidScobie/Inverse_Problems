@@ -41,41 +41,18 @@ print(D1x2d.shape)
 D1y2d = sparse.kron(D1x,scipy.sparse.identity(256))
 print(D1y2d.shape)
 
-# diags_y = np.array([0])
-# D1y = spdiags(-mid,diags_y,256**2,256**2)
-
-# multip = np.matmul(np.transpose(D1x2d),D1x2d)+np.matmul(np.transpose(D1y2d),D1y2d)
 lap = -((np.transpose(D1x2d)@D1x2d) + (np.transpose(D1y2d)@D1y2d))
 
 A1 = scipy.sparse.identity(256**2)-(0.25*lap)
-print(A1[500,:])
-# print(A.shape)
 
 f_sparse = sparse.csr_matrix(np.reshape(f,(256**2,1)))
-print(f_sparse)
 
-# T = np.reshape(1*(A@sparse.csr_matrix(np.reshape(f,(256**2,1))).toarray()),(1,256**2)).ravel()
-# print(T)
-# print(type(T))
-# print(T.shape)
 
-# y = lambda f: gaussian_filter(f,sigma)
-# K = gaussian_filter(y(np.reshape(f,(256,256))),sigma).ravel()
-# print(K)
-# print(type(K))
-# print(K.shape)
-
-# both = T+K
-# print(both)
-
-# print(nut)
-
-alpha = 1.5
+alpha = 0.1
 
 y = lambda f: gaussian_filter(f,sigma)
 
 z = lambda f: gaussian_filter(y(np.reshape(f,(256,256))),sigma).ravel() + np.reshape(alpha*(A1@sparse.csr_matrix(np.reshape(f,(256**2,1))).toarray()),(1,256**2)).ravel()
-# z = lambda f: np.reshape(alpha*(A1@sparse.csr_matrix(np.reshape(f,(256**2,1))).toarray()),(1,256**2)).ravel()
 
 A = LinearOperator((256**2,256**2),matvec = z)
 
@@ -94,8 +71,7 @@ class gmres_counter(object):
 
 counter = gmres_counter()
 
-# gmresOutput = gmres(A,ATg(g), x0 = f.ravel(), callback=counter, maxiter = 21)
-gmresOutput = gmres(A,ATg(g), x0 = np.zeros((256,256)).ravel(), callback=counter, maxiter = 6)
+gmresOutput = gmres(A,ATg(g), x0 = np.zeros((256,256)).ravel(), callback=counter)
 print(counter.niter)
 
 plt.figure(2)
