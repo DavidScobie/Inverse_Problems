@@ -79,6 +79,8 @@ plt.figure(3)
 plt.plot(alphas,DP)
 
 plt.figure(4)
+print(rsd_sq)
+print(sum_Tik)
 plt.loglog(rsd_sq,sum_Tik)
 
 
@@ -86,9 +88,13 @@ plt.loglog(rsd_sq,sum_Tik)
 #d
 DP=[]
 long_lsqr=[]
+rsd_sq=[]
+sum_Tik=[]
 
 for alpha in (alphas):
     diff = []
+    Tik=[]
+    TK1 = lambda s:(s**2)/2
 
     def M_f(f):
         top = gaussian_filter(f,sigma).ravel()
@@ -111,8 +117,11 @@ for alpha in (alphas):
 
     for i in range (256**2):
         diff.append(np.abs(long_f[i]-long_lsqr[i]))
+        Tik.append(TK1(long_lsqr[i]))
 
-    residual = np.sum(diff)    
+    residual = np.sum(diff)   
+    sum_Tik.append(np.sum(Tik))
+    rsd_sq.append(residual**2)  
     DP.append(((residual**2)/(256**2))-(theta**2))    
 
 plt.figure(5)
@@ -120,6 +129,11 @@ plt.imshow(np.reshape(lsqrOutput[0],(256,256)),cmap='gray')
 
 plt.figure(6)
 plt.plot(alphas,DP)
+
+plt.figure(7)
+plt.loglog(rsd_sq,sum_Tik)
+print(rsd_sq)
+print(sum_Tik)
 plt.show()
 
 
