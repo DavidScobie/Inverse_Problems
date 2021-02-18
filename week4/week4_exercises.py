@@ -51,7 +51,7 @@ class gmres_counter(object):
 
 counter = gmres_counter()
 
-gmresOutput = gmres(A,ATg(g), x0 = f.ravel(), callback=counter)
+gmresOutput = gmres(A,ATg(g), x0 = f.ravel(), callback=counter,atol=1.0e-9)
 print(counter.niter)
 
 plt.figure(2)
