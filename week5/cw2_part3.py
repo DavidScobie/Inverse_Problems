@@ -38,6 +38,10 @@ D1x = spdiags(dat,diags_x,257,256)
 D1x2d = sparse.kron(scipy.sparse.identity(256),D1x)
 D1y2d = sparse.kron(D1x,scipy.sparse.identity(256))
 
+#try to sort out proper DT_D with syntax later
+# D2d = np.vstack([D1x2d,D1y2d])
+# DT_D = (np.transpose(D2d))@D2d
+
 lap = -((np.transpose(D1x2d)@D1x2d) + (np.transpose(D1y2d)@D1y2d))
 A1 = scipy.sparse.identity(256**2)-(0.25*lap)
 
@@ -76,20 +80,20 @@ plt.imshow(np.reshape(gmresOutput[0],(256,256)),cmap='gray')
 
 def M_f(f):
     top = gaussian_filter(f,sigma).ravel()
-    # bottom = (alpha**0.5)*np.reshape(f,(256,256)).ravel()
-    bottom = np.reshape((alpha**0.5)*(A1@sparse.csr_matrix(np.reshape(f,(256**2,1))).toarray()),(1,256**2)).ravel()
+    bottom = (alpha**0.5)*-lap@np.reshape(f,(256**2,1)).ravel()
+    # bottom = np.reshape((alpha**0.5)*(-lap@sparse.csr_matrix(np.reshape(f,(256**2,1))).toarray()),(1,256**2)).ravel()
     return np.vstack([top,bottom])
 
 def MT_b(b):
     b1 = np.reshape(b[0:65536],(256,256))
     b2 = np.reshape(b[65536:],(256,256))
     # return (gaussian_filter(b1,sigma) + (alpha**0.5)*b2).ravel()
-    return (gaussian_filter(b1,sigma) + (alpha**0.5)*b2).ravel()
+    return (gaussian_filter(b1,sigma) + (alpha**0.5)*-lap.T@b2).ravel()
     
 
-A = LinearOperator(((256**2)*2,256**2),matvec = M_f, rmatvec = MT_b)
+A = LinearOperator(((256**2)*3,256**2),matvec = M_f, rmatvec = MT_b)
 siz = g.size
-b = np.vstack([np.reshape(g,(siz,1)),np.zeros((siz,1))])
+b = np.vstack([np.reshape(g,(siz,1)),np.zeros((siz*2,1))])
 lsqrOutput = scipy.sparse.linalg.lsqr(A,b, x0 = np.zeros((256,256)).ravel(),atol=1.0e-9)
 print(lsqrOutput[2])
 
@@ -98,4 +102,6 @@ plt.imshow(np.reshape(lsqrOutput[0],(256,256)),cmap='gray')
 
 print(np.reshape(lsqrOutput[0],(256,256))-np.reshape(gmresOutput[0],(256,256)))
 plt.show()
+
+
 
