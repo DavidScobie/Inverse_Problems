@@ -30,35 +30,27 @@ plt.imshow(g,cmap='gray')
 
 #3
 
-mid = np.ones([1,257]).flatten()
+mid = np.ones([1,256]).flatten()
 dat=np.array([-mid,mid])
 diags_x = np.array([0,-1])
-# D1x = spdiags(dat,diags_x,257,256)
 D1x = spdiags(dat,diags_x,256,256)
 
 D1x2d = sparse.kron(scipy.sparse.identity(256),D1x)
 D1y2d = sparse.kron(D1x,scipy.sparse.identity(256))
 
-#try to sort out proper DT_D with syntax later
-# D2d = np.vstack([D1x2d,D1y2d])
 D2d = scipy.sparse.vstack([D1x2d,D1y2d])
-D_2D_trans = np.transpose(D2d)
+# D_2D_trans = np.transpose(D2d)
+D_2D_trans = sparse.csr_matrix.transpose(scipy.sparse.csr_matrix(D2d))
 DT_D = D_2D_trans@D2d
 
-# lap = -((np.transpose(D1x2d)@D1x2d) + (np.transpose(D1y2d)@D1y2d))
-# A1 = scipy.sparse.identity(256**2)-(0.25*lap)
-
-
-alpha = 0.1
+alpha = 0.016
 
 y = lambda f: gaussian_filter(f,sigma)
 
-# z = lambda f: gaussian_filter(y(np.reshape(f,(256,256))),sigma).ravel() + np.reshape(alpha*(-lap@sparse.csr_matrix(np.reshape(f,(256**2,1))).toarray()),(1,256**2)).ravel()
-z = lambda f: gaussian_filter(y(np.reshape(f,(256,256))),sigma).ravel() + np.reshape(alpha*(DT_D@sparse.csr_matrix(np.reshape(f,(256**2,1))).toarray()),(1,256**2)).ravel()
+# z = lambda f: gaussian_filter(y(np.reshape(f,(256,256))),sigma).ravel() + np.reshape(alpha*(DT_D@sparse.csr_matrix(np.reshape(f,(256**2,1))).toarray()),(1,256**2)).ravel()
+z = lambda f: (gaussian_filter(y(np.reshape(f,(256,256))),sigma).ravel()) + (alpha*(DT_D@sparse.csr_matrix(np.reshape(f,(256**2,1))).toarray())).ravel()
 
 A = LinearOperator((256**2,256**2),matvec = z)
-
-b = np.zeros((256**2,1))
 
 ATg = lambda g: gaussian_filter(np.reshape(g,(256,256)),sigma).ravel()
 
@@ -81,11 +73,6 @@ plt.imshow(np.reshape(gmresOutput[0],(256,256)),cmap='gray')
 
 
 #d
-# D1x = spdiags(dat,diags_x,256,256)
-# D1x2d = sparse.kron(scipy.sparse.identity(256),D1x)
-# D1y2d = sparse.kron(D1x,scipy.sparse.identity(256))
-# D_2D = vstack([D1x2d,D1y2d])
-# D_2D_trans = np.transpose(D_2D)
 
 def M_f(f):
     top = gaussian_filter(f,sigma).ravel()
