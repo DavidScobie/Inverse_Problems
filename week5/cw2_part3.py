@@ -43,7 +43,7 @@ D2d = scipy.sparse.vstack([D1x2d,D1y2d])
 D_2D_trans = sparse.csr_matrix.transpose(scipy.sparse.csr_matrix(D2d))
 DT_D = D_2D_trans@D2d
 
-alpha = 0.016
+alpha = 0.1
 
 y = lambda f: gaussian_filter(f,sigma)
 
