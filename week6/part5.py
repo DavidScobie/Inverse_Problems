@@ -16,9 +16,9 @@ from scipy import stats
 #a
 img = mpimg.imread('Cameraman256.png')
 f = np.float32(img)
-# plt.figure(0)
-# imgplot = plt.imshow(f,cmap = 'gray')
-# plt.colorbar()
+plt.figure(0)
+imgplot = plt.imshow(f,cmap = 'gray')
+plt.colorbar()
 
 #b
 sigma = 5
@@ -27,8 +27,8 @@ theta = 0.01
 g = scipy.ndimage.filters.gaussian_filter(f,sigma)
 w,h = g.shape
 g = g + theta*np.random.randn(w,h)
-# plt.figure(1)
-# plt.imshow(g,cmap='gray')
+plt.figure(1)
+plt.imshow(g,cmap='gray')
 
 #Constructing D
 
@@ -44,45 +44,23 @@ D2d = scipy.sparse.vstack([D1x2d,D1y2d])
 D_2D_trans = sparse.csr_matrix.transpose(scipy.sparse.csr_matrix(D2d))
 DT_D = D_2D_trans@D2d
 
-#Finding threshold T
-def printBoundary(a, m, n): 
-    bound=[]
-    for i in range(m): 
-        for j in range(n): 
-            if (i == 0): 
-                bound.append(a[i][j])
-            elif (i == m-1): 
-                bound.append(a[i][j]) 
-            elif (j == 0): 
-                bound.append(a[i][j])
-            elif (j == n-1):  
-                bound.append(a[i][j])
-    return bound
-
-bound = printBoundary(f, 256, 256)
-print(len(bound))
-plt.figure(2)
-plt.hist(bound,bins=30)
-perc = np.percentile(bound, 5, axis=0, keepdims=True)
-print(perc)
-
 #Finding gamma fuuction
-T=float(perc)
-del_X_f = D1x2d@sparse.csr_matrix(np.reshape(f,(256**2,1)))
-del_Y_f = D1y2d@sparse.csr_matrix(np.reshape(f,(256**2,1)))
+T=0.27
+del_X_g = D1x2d@sparse.csr_matrix(np.reshape(g,(256**2,1)))
+del_Y_g = D1y2d@sparse.csr_matrix(np.reshape(g,(256**2,1)))
 
-del_X_f_squ = scipy.sparse.csr_matrix.multiply(scipy.sparse.csr_matrix(del_X_f),scipy.sparse.csr_matrix(del_X_f))
-del_Y_f_squ = scipy.sparse.csr_matrix.multiply(scipy.sparse.csr_matrix(del_Y_f),scipy.sparse.csr_matrix(del_Y_f))
-sqrt_bit = scipy.sparse.csr_matrix.sqrt(del_X_f_squ + del_Y_f_squ)
+del_X_g_squ = scipy.sparse.csr_matrix.multiply(scipy.sparse.csr_matrix(del_X_g),scipy.sparse.csr_matrix(del_X_g))
+del_Y_g_squ = scipy.sparse.csr_matrix.multiply(scipy.sparse.csr_matrix(del_Y_g),scipy.sparse.csr_matrix(del_Y_g))
+sqrt_bit = scipy.sparse.csr_matrix.sqrt(del_X_g_squ + del_Y_g_squ)
 exponent = -sqrt_bit/T
 gamma_diag = (np.exp(exponent.todense()))
 gamma_diag_array = np.ravel((gamma_diag.T).sum(axis=0))
 gamma = dia_matrix((gamma_diag_array, np.array([0])), shape=(256**2, 256**2))
 
-#plotting gamma values
-plt.figure(3)
-plt.imshow(np.reshape(gamma_diag,(256,256)),cmap='gray')
-plt.colorbar()
+# #plotting gamma values
+# plt.figure(2)
+# plt.imshow(np.reshape(gamma_diag,(256,256)),cmap='gray')
+# plt.colorbar()
 
 sqrt_gam = scipy.sparse.csr_matrix.sqrt(gamma)
 sqrt_gam_dx = sqrt_gam@D1x2d
@@ -92,16 +70,32 @@ sqrt_gam_D_trans = sparse.csr_matrix.transpose(scipy.sparse.csr_matrix(sqrt_gam_
 
 alpha = 0.016
 
-def M_f(f):
-    top = gaussian_filter(f,sigma).ravel()
-    middle = (alpha**0.5)*(sqrt_gam_dx@sparse.csr_matrix(np.reshape(f,(256**2,1)))).toarray().ravel()
-    bottom = (alpha**0.5)*(sqrt_gam_dy@sparse.csr_matrix(np.reshape(f,(256**2,1)))).toarray().ravel()
+def M_f(g):
+    # del_X_g = D1x2d@sparse.csr_matrix(np.reshape(g,(256**2,1)))
+    # del_Y_g = D1y2d@sparse.csr_matrix(np.reshape(g,(256**2,1)))
+
+    # del_X_g_squ = scipy.sparse.csr_matrix.multiply(scipy.sparse.csr_matrix(del_X_g),scipy.sparse.csr_matrix(del_X_g))
+    # del_Y_g_squ = scipy.sparse.csr_matrix.multiply(scipy.sparse.csr_matrix(del_Y_g),scipy.sparse.csr_matrix(del_Y_g))
+    # sqrt_bit = scipy.sparse.csr_matrix.sqrt(del_X_g_squ + del_Y_g_squ)
+    # exponent = -sqrt_bit/T
+    # gamma_diag = (np.exp(exponent.todense()))
+    # gamma_diag_array = np.ravel((gamma_diag.T).sum(axis=0))
+    # gamma = dia_matrix((gamma_diag_array, np.array([0])), shape=(256**2, 256**2))
+    # sqrt_gam = scipy.sparse.csr_matrix.sqrt(gamma)
+    # sqrt_gam_dx = sqrt_gam@D1x2d
+    # sqrt_gam_dy = sqrt_gam@D1y2d
+
+    top = gaussian_filter(g,sigma).ravel()
+    middle = (alpha**0.5)*(sqrt_gam_dx@sparse.csr_matrix(np.reshape(g,(256**2,1)))).toarray().ravel()
+    bottom = (alpha**0.5)*(sqrt_gam_dy@sparse.csr_matrix(np.reshape(g,(256**2,1)))).toarray().ravel()
     return np.vstack([top,middle,bottom])
 
 def MT_b(b):
+    
     b1 = np.reshape(b[0:65536],(256,256))
+    print(b1[20][20])
     Ag = gaussian_filter(b1,sigma)
-
+    
     b2 = np.reshape(b[65536:],(2*(256**2),1))
     reg_bit = (alpha**0.5)*np.reshape((sqrt_gam_D_trans@sparse.csr_matrix(b2)),(256,256)).toarray()
     return (Ag + reg_bit).ravel()
@@ -110,14 +104,13 @@ def MT_b(b):
 A = LinearOperator(((256**2)*3,256**2),matvec = M_f, rmatvec = MT_b)
 siz = g.size
 b = np.vstack([np.reshape(g,(siz,1)),np.zeros((siz*2,1))])
-lsqrOutput = scipy.sparse.linalg.lsqr(A,b, x0 = np.zeros((256,256)).ravel(),atol=1.0e-3,iter_lim = 100)
+lsqrOutput = scipy.sparse.linalg.lsqr(A,b, x0 = np.zeros((256,256)).ravel(),atol=1.0e-3,iter_lim = 5)
 
-print(lsqrOutput[2])
-print(lsqrOutput[3])
-print(lsqrOutput[8])
+# print(lsqrOutput[2])
+# print(lsqrOutput[3])
+# print(lsqrOutput[8])
 
-plt.figure(4)
+plt.figure(3)
 plt.imshow(np.reshape(lsqrOutput[0],(256,256)),cmap='gray')
 
-# print(np.reshape(lsqrOutput[0],(256,256))-np.reshape(gmresOutput[0],(256,256)))
-plt.show()
+# plt.show()
