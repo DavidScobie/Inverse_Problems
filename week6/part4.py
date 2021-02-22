@@ -16,9 +16,9 @@ from scipy import stats
 #a
 img = mpimg.imread('Cameraman256.png')
 f = np.float32(img)
-plt.figure(0)
-imgplot = plt.imshow(f,cmap = 'gray')
-plt.colorbar()
+# plt.figure(0)
+# imgplot = plt.imshow(f,cmap = 'gray')
+# plt.colorbar()
 
 #b
 sigma = 5
@@ -27,8 +27,8 @@ theta = 0.01
 g = scipy.ndimage.filters.gaussian_filter(f,sigma)
 w,h = g.shape
 g = g + theta*np.random.randn(w,h)
-plt.figure(1)
-plt.imshow(g,cmap='gray')
+# plt.figure(1)
+# plt.imshow(g,cmap='gray')
 
 #Constructing D
 
@@ -63,15 +63,11 @@ bound = printBoundary(f, 256, 256)
 print(len(bound))
 plt.figure(2)
 plt.hist(bound,bins=30)
-perc = np.percentile(bound, 50, axis=0, keepdims=True)
+perc = np.percentile(bound, 5, axis=0, keepdims=True)
 print(perc)
-# lnspc = np.linspace(np.min(f), np.max(f), len(bound))
-# m, s = stats.norm.fit(bound)
-# pdf_g = stats.norm.pdf(lnspc, m, s)
-# plt.plot(lnspc, 50*pdf_g, label="Norm")
 
 #Finding gamma fuuction
-T=0.2
+T=float(perc)
 del_X_f = D1x2d@sparse.csr_matrix(np.reshape(f,(256**2,1)))
 del_Y_f = D1y2d@sparse.csr_matrix(np.reshape(f,(256**2,1)))
 
@@ -83,6 +79,11 @@ gamma_diag = (np.exp(exponent.todense()))
 gamma_diag_array = np.ravel((gamma_diag.T).sum(axis=0))
 gamma = dia_matrix((gamma_diag_array, np.array([0])), shape=(256**2, 256**2))
 
+#plotting gamma values
+gam_pix = np.reshape(gamma_diag,(256,256))
+plt.figure(3)
+plt.imshow(gam_pix,cmap='gray')
+plt.colorbar()
 
 sqrt_gam = scipy.sparse.csr_matrix.sqrt(gamma)
 sqrt_gam_dx = sqrt_gam@D1x2d
@@ -116,7 +117,7 @@ print(lsqrOutput[2])
 print(lsqrOutput[3])
 print(lsqrOutput[8])
 
-plt.figure(3)
+plt.figure(4)
 plt.imshow(np.reshape(lsqrOutput[0],(256,256)),cmap='gray')
 
 # print(np.reshape(lsqrOutput[0],(256,256))-np.reshape(gmresOutput[0],(256,256)))
