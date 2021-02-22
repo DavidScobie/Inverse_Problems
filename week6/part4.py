@@ -11,6 +11,7 @@ from scipy import sparse
 from scipy.sparse import vstack
 from scipy.sparse.linalg import expm
 from scipy.sparse import dia_matrix
+from scipy import stats 
 
 #a
 img = mpimg.imread('Cameraman256.png')
@@ -29,7 +30,7 @@ g = g + theta*np.random.randn(w,h)
 plt.figure(1)
 plt.imshow(g,cmap='gray')
 
-#3
+#Constructing D
 
 mid = np.ones([1,256]).flatten()
 dat=np.array([-mid,mid])
@@ -43,6 +44,33 @@ D2d = scipy.sparse.vstack([D1x2d,D1y2d])
 D_2D_trans = sparse.csr_matrix.transpose(scipy.sparse.csr_matrix(D2d))
 DT_D = D_2D_trans@D2d
 
+#Finding threshold T
+def printBoundary(a, m, n): 
+    bound=[]
+    for i in range(m): 
+        for j in range(n): 
+            if (i == 0): 
+                bound.append(a[i][j])
+            elif (i == m-1): 
+                bound.append(a[i][j]) 
+            elif (j == 0): 
+                bound.append(a[i][j])
+            elif (j == n-1):  
+                bound.append(a[i][j])
+    return bound
+
+bound = printBoundary(f, 256, 256)
+print(len(bound))
+plt.figure(2)
+plt.hist(bound,bins=30)
+perc = np.percentile(bound, 50, axis=0, keepdims=True)
+print(perc)
+# lnspc = np.linspace(np.min(f), np.max(f), len(bound))
+# m, s = stats.norm.fit(bound)
+# pdf_g = stats.norm.pdf(lnspc, m, s)
+# plt.plot(lnspc, 50*pdf_g, label="Norm")
+
+#Finding gamma fuuction
 T=0.2
 del_X_f = D1x2d@sparse.csr_matrix(np.reshape(f,(256**2,1)))
 del_Y_f = D1y2d@sparse.csr_matrix(np.reshape(f,(256**2,1)))
@@ -54,6 +82,7 @@ exponent = -sqrt_bit/T
 gamma_diag = (np.exp(exponent.todense()))
 gamma_diag_array = np.ravel((gamma_diag.T).sum(axis=0))
 gamma = dia_matrix((gamma_diag_array, np.array([0])), shape=(256**2, 256**2))
+
 
 sqrt_gam = scipy.sparse.csr_matrix.sqrt(gamma)
 sqrt_gam_dx = sqrt_gam@D1x2d
@@ -81,13 +110,13 @@ def MT_b(b):
 A = LinearOperator(((256**2)*3,256**2),matvec = M_f, rmatvec = MT_b)
 siz = g.size
 b = np.vstack([np.reshape(g,(siz,1)),np.zeros((siz*2,1))])
-# lsqrOutput = scipy.sparse.linalg.lsqr(A,b, x0 = np.zeros((256,256)).ravel(),atol=1.0e-3,iter_lim = 100)
-lsqrOutput = scipy.sparse.linalg.lsqr(A,b, x0 = np.zeros((256,256)).ravel(),iter_lim = 300)
+lsqrOutput = scipy.sparse.linalg.lsqr(A,b, x0 = np.zeros((256,256)).ravel(),atol=1.0e-3,iter_lim = 100)
+
 print(lsqrOutput[2])
 print(lsqrOutput[3])
 print(lsqrOutput[8])
 
-plt.figure(2)
+plt.figure(3)
 plt.imshow(np.reshape(lsqrOutput[0],(256,256)),cmap='gray')
 
 # print(np.reshape(lsqrOutput[0],(256,256))-np.reshape(gmresOutput[0],(256,256)))
