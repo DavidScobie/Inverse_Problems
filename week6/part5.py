@@ -71,32 +71,57 @@ sqrt_gam_D_trans = sparse.csr_matrix.transpose(scipy.sparse.csr_matrix(sqrt_gam_
 alpha = 0.016
 
 def M_f(g):
-    # del_X_g = D1x2d@sparse.csr_matrix(np.reshape(g,(256**2,1)))
-    # del_Y_g = D1y2d@sparse.csr_matrix(np.reshape(g,(256**2,1)))
+    del_X_g = D1x2d@sparse.csr_matrix(np.reshape(g,(256**2,1)))
+    del_Y_g = D1y2d@sparse.csr_matrix(np.reshape(g,(256**2,1)))
 
-    # del_X_g_squ = scipy.sparse.csr_matrix.multiply(scipy.sparse.csr_matrix(del_X_g),scipy.sparse.csr_matrix(del_X_g))
-    # del_Y_g_squ = scipy.sparse.csr_matrix.multiply(scipy.sparse.csr_matrix(del_Y_g),scipy.sparse.csr_matrix(del_Y_g))
-    # sqrt_bit = scipy.sparse.csr_matrix.sqrt(del_X_g_squ + del_Y_g_squ)
-    # exponent = -sqrt_bit/T
-    # gamma_diag = (np.exp(exponent.todense()))
-    # gamma_diag_array = np.ravel((gamma_diag.T).sum(axis=0))
-    # gamma = dia_matrix((gamma_diag_array, np.array([0])), shape=(256**2, 256**2))
-    # sqrt_gam = scipy.sparse.csr_matrix.sqrt(gamma)
-    # sqrt_gam_dx = sqrt_gam@D1x2d
-    # sqrt_gam_dy = sqrt_gam@D1y2d
-
+    del_X_g_squ = scipy.sparse.csr_matrix.multiply(scipy.sparse.csr_matrix(del_X_g),scipy.sparse.csr_matrix(del_X_g))
+    del_Y_g_squ = scipy.sparse.csr_matrix.multiply(scipy.sparse.csr_matrix(del_Y_g),scipy.sparse.csr_matrix(del_Y_g))
+    sqrt_bit = scipy.sparse.csr_matrix.sqrt(del_X_g_squ + del_Y_g_squ)
+    exponent = -sqrt_bit/T
+    gamma_diag = (np.exp(exponent.todense()))
+    gamma_diag_array = np.ravel((gamma_diag.T).sum(axis=0))
+    gamma = dia_matrix((gamma_diag_array, np.array([0])), shape=(256**2, 256**2))
+    sqrt_gam = scipy.sparse.csr_matrix.sqrt(gamma)
+    sqrt_gam_dx = sqrt_gam@D1x2d
+    sqrt_gam_dy = sqrt_gam@D1y2d
+    
     top = gaussian_filter(g,sigma).ravel()
     middle = (alpha**0.5)*(sqrt_gam_dx@sparse.csr_matrix(np.reshape(g,(256**2,1)))).toarray().ravel()
     bottom = (alpha**0.5)*(sqrt_gam_dy@sparse.csr_matrix(np.reshape(g,(256**2,1)))).toarray().ravel()
     return np.vstack([top,middle,bottom])
 
-def MT_b(b):
-    
+def MT_b(b):    
     b1 = np.reshape(b[0:65536],(256,256))
-    print(b1[20][20])
     Ag = gaussian_filter(b1,sigma)
     
     b2 = np.reshape(b[65536:],(2*(256**2),1))
+    # b2 = np.reshape(b[65536:],((256**2),2))
+    del_X_g = D1x2d@sparse.csr_matrix(np.reshape(b2,(256**2,2)))
+    del_Y_g = D1y2d@sparse.csr_matrix(np.reshape(b2,(256**2,2)))
+
+    del_X_g_squ = scipy.sparse.csr_matrix.multiply(scipy.sparse.csr_matrix(del_X_g),scipy.sparse.csr_matrix(del_X_g))
+    del_Y_g_squ = scipy.sparse.csr_matrix.multiply(scipy.sparse.csr_matrix(del_Y_g),scipy.sparse.csr_matrix(del_Y_g))   
+
+    sum_cols_X = scipy.sparse.csr_matrix.sum(del_X_g_squ,axis=1)
+    sum_cols_Y = scipy.sparse.csr_matrix.sum(del_Y_g_squ,axis=1)
+    add = sparse.csr_matrix(sum_cols_X + sum_cols_Y)
+    print(np.min(add))
+    # if np.max(add) == 0:
+    #     sqrt_bit=add
+    # else:
+    #     sqrt_bit = scipy.sparse.csr_matrix.sqrt(add)
+    # sqrt_bit=add
+    exponent = sparse.csr_matrix(-sqrt_bit/T)
+
+    gamma_diag = (np.exp(exponent.todense()))
+    gamma_diag_array = np.ravel((gamma_diag.T).sum(axis=0))
+    gamma = dia_matrix((gamma_diag_array, np.array([0])), shape=(256**2, 256**2))
+    sqrt_gam = scipy.sparse.csr_matrix.sqrt(gamma)
+    sqrt_gam_dx = sqrt_gam@D1x2d
+    sqrt_gam_dy = sqrt_gam@D1y2d    
+    sqrt_gam_D = scipy.sparse.vstack([sqrt_gam_dx,sqrt_gam_dy])
+    sqrt_gam_D_trans = sparse.csr_matrix.transpose(scipy.sparse.csr_matrix(sqrt_gam_D))
+    
     reg_bit = (alpha**0.5)*np.reshape((sqrt_gam_D_trans@sparse.csr_matrix(b2)),(256,256)).toarray()
     return (Ag + reg_bit).ravel()
     
@@ -113,4 +138,4 @@ lsqrOutput = scipy.sparse.linalg.lsqr(A,b, x0 = np.zeros((256,256)).ravel(),atol
 plt.figure(3)
 plt.imshow(np.reshape(lsqrOutput[0],(256,256)),cmap='gray')
 
-# plt.show()
+plt.show()
