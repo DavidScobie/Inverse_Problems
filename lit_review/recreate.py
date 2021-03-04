@@ -3,6 +3,7 @@ from scipy.linalg import orth
 import cvxpy as cp
 import matplotlib.pyplot as plt
 import random
+import scipy as sp
 
 # U = orth(A1)
 # V = orth(np.transpose(A1))
@@ -22,10 +23,19 @@ import random
 
 
 #Constructing A
-A1 = np.random.randn(300,1024)
+A = np.random.randn(300,1024)
+
+#Find singular values of matrix A (as described in paper)
+U, W1, VT = np.linalg.svd(A)
+W = np.zeros((300, 300),float)
+np.fill_diagonal(W, W1)
+print(W)
+
+plt.figure(0)
+plt.title('singular values of A')
+plt.plot(W1)
 
 samp = np.zeros(1024)
-# samp[0:50]=1
 
 pos_inds=[]
 for i in range(25):
@@ -43,34 +53,62 @@ print(neg_inds)
 for negi in neg_inds:
     samp[negi] = -1
 
+plt.figure(1)
+plt.title('Sampled points')
+plt.plot(samp)
+
 # Construct the problem with no noise
 f = cp.Variable(1024)
 
-print(f)
-
-y=A1@samp
-print(y.shape)
+y=A@samp
 objective = cp.Minimize(cp.sum(cp.abs(f)))
-constraints = [cp.sum_squares(A1*f - y) <= 0]
+constraints = [cp.sum_squares(A*f - y) <= 0]
 prob = cp.Problem(objective, constraints)
 
 result = prob.solve()
-print(result)
-print(f.value.shape)
 
-plt.figure(0)
+plt.figure(2)
+plt.title('Signal with no noise')
 plt.plot(f.value)
 
 #problem with noise =0.05
 f_1 = cp.Variable(1024)
 objective = cp.Minimize(cp.sum(cp.abs(f_1)))
-constraints = [cp.sum_squares(A1*f_1 - y) <= 0.86]
+constraints = [cp.sum_squares(A*f_1 - y) <= 0.86]
 prob = cp.Problem(objective, constraints)
 result = prob.solve()
 print(f_1.value)
 
-plt.figure(1)
+plt.figure(3)
+plt.title('Signal with noise')
 plt.plot(f_1.value)
+
+#Constructing A with exponentially decreasing singular spectrum
+start = np.random.randn(300,1024)
+U = orth(start)
+V = orth(np.transpose(start))
+W_diag = np.zeros(300)
+for k in range (300):
+    W_diag[k] = np.exp(-(k/100))
+    # W_diag[k] = 50 - (0.125*k)
+
+W_mat = np.zeros([300,300])
+np.fill_diagonal(W_mat, W_diag)
+
+A_begin = np.matmul(U,W_mat)
+A = np.matmul(A_begin,np.transpose(V))
+
+#Finding sparse signal with exp decreasing singular values of A
+f_2 = cp.Variable(1024)
+objective = cp.Minimize(cp.sum(cp.abs(f_2)))
+constraints = [cp.sum_squares(A*f_2 - y) <= 0]
+prob = cp.Problem(objective, constraints)
+result = prob.solve()
+
+plt.figure(4)
+plt.title('Signal from A with exponentially decaying singular values')
+plt.plot(f_2.value)
+
 plt.show()
 
 
