@@ -29,7 +29,6 @@ A = np.random.randn(300,1024)
 U, W1, VT = np.linalg.svd(A)
 W = np.zeros((300, 300),float)
 np.fill_diagonal(W, W1)
-print(W)
 
 plt.figure(0)
 plt.title('singular values of A')
@@ -40,7 +39,6 @@ samp = np.zeros(1024)
 pos_inds=[]
 for i in range(25):
     pos_inds.append(int(np.round(1024*random.random())))
-print(pos_inds)
 
 for posi in pos_inds:
     samp[posi] = 1
@@ -48,7 +46,6 @@ for posi in pos_inds:
 neg_inds=[]
 for i in range(25):
     neg_inds.append(int(np.round(1024*random.random())))
-print(neg_inds)
 
 for negi in neg_inds:
     samp[negi] = -1
@@ -61,8 +58,9 @@ plt.plot(samp)
 f = cp.Variable(1024)
 
 y=A@samp
-objective = cp.Minimize(cp.sum(cp.abs(f)))
-constraints = [cp.sum_squares(A*f - y) <= 0]
+objective = cp.Minimize(cp.sum(cp.norm(f,1)))
+# constraints = [cp.sum_squares(A*f - y) <= 0]
+constraints = [cp.norm(A@f - y,2) <= 0]
 prob = cp.Problem(objective, constraints)
 
 result = prob.solve()
@@ -71,10 +69,12 @@ plt.figure(2)
 plt.title('Signal with no noise')
 plt.plot(f.value)
 
-#problem with noise =0.05
+#problem with noise = 0.05
 f_1 = cp.Variable(1024)
-objective = cp.Minimize(cp.sum(cp.abs(f_1)))
-constraints = [cp.sum_squares(A*f_1 - y) <= 0.86]
+# objective = cp.Minimize(cp.sum(cp.abs(f_1)))
+objective = cp.Minimize(cp.sum(cp.norm(f_1,1)))
+# constraints = [cp.sum_squares(A*f_1 - y) <= 9.34]
+constraints = [cp.norm(A@f_1 - y,2) <= 9.34]
 prob = cp.Problem(objective, constraints)
 result = prob.solve()
 print(f_1.value)
@@ -100,8 +100,8 @@ A = np.matmul(A_begin,np.transpose(V))
 
 #Finding sparse signal with exp decreasing singular values of A
 f_2 = cp.Variable(1024)
-objective = cp.Minimize(cp.sum(cp.abs(f_2)))
-constraints = [cp.sum_squares(A*f_2 - y) <= 0]
+objective = cp.Minimize(cp.sum(cp.norm(f_2,1)))
+constraints = [cp.norm(A@f_2 - y,2) <= 0]
 prob = cp.Problem(objective, constraints)
 result = prob.solve()
 
