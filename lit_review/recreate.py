@@ -5,23 +5,6 @@ import matplotlib.pyplot as plt
 import random
 import scipy as sp
 
-# U = orth(A1)
-# V = orth(np.transpose(A1))
-
-# W_size = 300
-# W_diag = np.linspace(1,W_size,W_size)
-# W=np.zeros([W_size,W_size])
-# for i in range (W_size):
-#     for j in range (W_size):
-#         if i == j:
-#             W[i][j] = W_diag[i]
-
-# U_W = np.matmul(U,W)
-
-# A = np.matmul(U_W,np.transpose(V))
-# print(A.shape)
-
-
 #Constructing A
 A = np.random.randn(300,1024)
 
@@ -91,6 +74,11 @@ W_diag = np.zeros(300)
 for k in range (300):
     W_diag[k] = np.exp(-(k/100))
     # W_diag[k] = 50 - (0.125*k)
+    # W_diag[k] = 1
+
+plt.figure(4)
+plt.title('singular values of A')
+plt.plot(W_diag)
 
 W_mat = np.zeros([300,300])
 np.fill_diagonal(W_mat, W_diag)
@@ -105,7 +93,7 @@ constraints = [cp.norm(A@f_2 - y,2) <= 0]
 prob = cp.Problem(objective, constraints)
 result = prob.solve()
 
-plt.figure(4)
+plt.figure(5)
 plt.title('Signal from A with exponentially decaying singular values')
 plt.plot(f_2.value)
 
