@@ -42,7 +42,7 @@ for proj_range in proj_range_array:
     np.fill_diagonal(W, W1)
 
     plt.figure((2*k)+1)
-    plt.title("singular values of A. Projection range = %i" % proj_range)  
+    plt.title("singular values of A. Projection range in radians: %1.3f" % proj_range)  
     plt.plot(W1)
 
 plt.show()
