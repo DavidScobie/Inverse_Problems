@@ -51,18 +51,23 @@ print(projector_id)
 print(rec_id)
 print(alg_id)
 
-def A(f,projector_id):
+# def A(f,projector_id):
+def A(f):
     print(f.shape)
     print(projector_id)
     f_resh = np.reshape(f,(128,128))
-    sinogram_id, sinogram = astra.create_sino(f_resh, projector_id,  returnData=True)
+    # sinogram_id, sinogram = astra.create_sino(f_resh, projector_id,  returnData=True)
+    sinogram_id, sinogram = astra.create_sino(f_resh, 5,  returnData=True)
     A_x = sinogram
     return A_x
 
-def AT(y,rec_id,alg_id):
+# def AT(y,rec_id,alg_id):
+def AT(y):
     print(y.shape)
-    astra.algorithm.run(alg_id)
-    f_rec = astra.data2d.get(rec_id)
+    # astra.algorithm.run(alg_id)
+    astra.algorithm.run(7)
+    # f_rec = astra.data2d.get(rec_id)
+    f_rec = astra.data2d.get(6)
     AT_y = f_rec
     print(rec_id)
     print(alg_id)
@@ -73,13 +78,15 @@ alpha = 0.1
 
 # y = AT(A(f,projector_id),rec_id,alg_id) + alpha*f
 
-z = lambda f: AT(A(f,projector_id),rec_id,alg_id) + alpha*f
+# z = lambda f: AT(A(f,5),6,7) + 0.1*f
+z = lambda f: AT(A(f)) + 0.1*f
 
-A = LinearOperator((128**2,128**2),matvec = z)
+A1 = LinearOperator((128**2,128**2),matvec = z)
 
-ATg = lambda g: AT(g,rec_id,alg_id).ravel()
+# ATg = lambda g: AT(g,rec_id,alg_id).ravel()
+ATg = lambda g: AT(g).ravel()
 
-gmresOutput = gmres(A,ATg(g,rec_id,alg_id), x0 = np.zeros((128,128)).ravel(), atol=1e-06)
+gmresOutput = gmres(A1,ATg(g), x0 = np.zeros((128,128)).ravel(), atol=1e-06)
 
 plt.figure(2)
 plt.imshow(np.reshape(gmresOutput[0],(128,128)),cmap='gray')
