@@ -59,6 +59,4 @@ plt.figure(3)
 plt.title('singular values of A')
 plt.plot(W1)
 
-#Changing number 
-
 plt.show()
