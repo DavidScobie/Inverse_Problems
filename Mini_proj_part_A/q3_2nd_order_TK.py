@@ -3,21 +3,37 @@ import astra
 import matplotlib.pyplot as plt
 from scipy.sparse.linalg import LinearOperator
 from scipy.sparse.linalg import gmres
+from scipy.sparse import spdiags
+from scipy import sparse
+
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
+import scipy.ndimage
+from scipy.sparse.linalg import gmres
+from scipy.sparse.linalg import LinearOperator
+from scipy.ndimage.filters import gaussian_filter
+from scipy.sparse.linalg import lsqr
+from scipy.sparse import spdiags
+from scipy import sparse
+from scipy.sparse import vstack
+from scipy.sparse.linalg import expm
+from scipy.sparse import dia_matrix
 
 #Load phantom in
 f = np.load('SLphan.npy')
-plt.figure(0)
-plt.imshow(f)
-plt.colorbar()
+# plt.figure(0)
+# plt.imshow(f)
+# plt.colorbar()
 
 #Add noise to phantom
 # theta = 0.01
 theta = 0.1
 w,h = f.shape
 g = f + theta*np.random.randn(w,h)
-plt.figure(1)
-plt.imshow(g)
-plt.colorbar()
+# plt.figure(1)
+# plt.imshow(g)
+# plt.colorbar()
 
 #Radon transform
 # Create volume geometries
@@ -68,6 +84,25 @@ print(projector_id)
 print(rec_id)
 print(alg_id)
 
+#Constructing gradient operator
+mid = np.ones([1,128]).flatten()
+dat=np.array([-mid,mid])
+diags_x = np.array([0,-1])
+D1x = spdiags(dat,diags_x,128,128)
+
+D1x2d = sparse.kron(scipy.sparse.identity(128),D1x)
+D1y2d = sparse.kron(D1x,scipy.sparse.identity(128))
+
+print(D1x2d.shape)
+# plt.figure(3)
+# plt.imshow(np.reshape(D1x2d@np.reshape(f,(128**2,1)),(128,128)))
+# plt.title('Gradient in x direction')
+
+D2d = scipy.sparse.vstack([D1x2d,D1y2d])
+
+D_2D_trans = sparse.csr_matrix.transpose(scipy.sparse.csr_matrix(D2d))
+DT_D = D_2D_trans@D2d
+
 def A(f):
     f_resh = np.reshape(f,(128,128))
     sinogram_id, sinogram = astra.create_sino(f_resh, projector_id,  returnData=True)
@@ -80,9 +115,10 @@ def AT(y):
     AT_y = f_rec
     return AT_y.ravel()
 
-alpha = 0.2
+alpha = 0.001
 
-z = lambda f: AT(A(f)) + alpha*f
+z = lambda f: AT(A(f)) + (alpha*(DT_D@sparse.csr_matrix(np.reshape(f,(128**2,1))).toarray())).ravel()
+
 
 A1 = LinearOperator((128**2,128**2),matvec = z)
 
@@ -101,7 +137,7 @@ counter = gmres_counter()
 
 gmresOutput = gmres(A1,ATg(g), x0 = np.zeros((128,128)).ravel(),callback=counter, atol=1e-06)
 
-plt.figure(3)
+plt.figure(4)
 plt.imshow(np.reshape(gmresOutput[0],(128,128)))
 plt.title('output of gmres')
 plt.colorbar()
