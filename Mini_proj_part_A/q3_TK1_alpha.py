@@ -8,20 +8,30 @@ from scipy import sparse
 import scipy.ndimage
 
 
+class gmres_counter(object):
+    def __init__(self, disp=True):
+        self._disp = disp
+        self.niter = 0
+    def __call__(self, rk=None):
+        self.niter += 1
+        if self._disp:
+            print('iter %3i\trk = %s' % (self.niter, str(rk)))
+
 #Load phantom in
 f = np.load('SLphan.npy')
-# plt.figure(0)
-# plt.imshow(f)
-# plt.colorbar()
+plt.figure(0)
+plt.imshow(f)
+plt.colorbar()
+forig = f
 
 #Add noise to phantom
 # theta = 0.01
 theta = 0.1
 w,h = f.shape
 g = f + theta*np.random.randn(w,h)
-# plt.figure(1)
-# plt.imshow(g)
-# plt.colorbar()
+plt.figure(1)
+plt.imshow(g)
+plt.colorbar()
 
 #Radon transform
 # Create volume geometries
@@ -91,43 +101,56 @@ D2d = scipy.sparse.vstack([D1x2d,D1y2d])
 D_2D_trans = sparse.csr_matrix.transpose(scipy.sparse.csr_matrix(D2d))
 DT_D = D_2D_trans@D2d
 
-def A(f):
-    f_resh = np.reshape(f,(128,128))
-    sinogram_id, sinogram = astra.create_sino(f_resh, projector_id,  returnData=True)
-    A_x = sinogram
-    return A_x
+DP=[]
+rsd_sq=[]
 
-def AT(y):
-    astra.algorithm.run(alg_id)
-    f_rec = astra.data2d.get(rec_id)
-    AT_y = f_rec
-    return AT_y.ravel()
+powers = np.linspace(-4,-2,num=10)
+alphas = np.exp(powers)
+for alpha in (alphas):
+    print(alpha)
+    diff = []
 
-alpha = 0.001
+    def A(f):
+        f_resh = np.reshape(f,(128,128))
+        sinogram_id, sinogram = astra.create_sino(f_resh, projector_id,  returnData=True)
+        A_x = sinogram
+        return A_x
 
-z = lambda f: AT(A(f)) + (alpha*(DT_D@sparse.csr_matrix(np.reshape(f,(128**2,1))).toarray())).ravel()
+    def AT(y):
+        astra.algorithm.run(alg_id)
+        f_rec = astra.data2d.get(rec_id)
+        AT_y = f_rec
+        return AT_y.ravel()
 
+    z = lambda f: AT(A(f)) + (alpha*(DT_D@sparse.csr_matrix(np.reshape(f,(128**2,1))).toarray())).ravel()
 
-A1 = LinearOperator((128**2,128**2),matvec = z)
+    A1 = LinearOperator((128**2,128**2),matvec = z)
 
-ATg = lambda g: AT(g).ravel()
+    ATg = lambda g: AT(g).ravel()
 
-class gmres_counter(object):
-    def __init__(self, disp=True):
-        self._disp = disp
-        self.niter = 0
-    def __call__(self, rk=None):
-        self.niter += 1
-        if self._disp:
-            print('iter %3i\trk = %s' % (self.niter, str(rk)))
+    counter = gmres_counter()
 
-counter = gmres_counter()
+    gmresOutput = gmres(A1,ATg(g), x0 = np.zeros((128,128)).ravel(),callback=counter, atol=1e-6)
 
-gmresOutput = gmres(A1,ATg(g), x0 = np.zeros((128,128)).ravel(),callback=counter, atol=1e-06)
+    long_f = forig.ravel()
+    long_gmres = gmresOutput[0].ravel()
 
-plt.figure(4)
+    for i in range (128**2):
+        diff.append(np.abs(long_f[i]-long_gmres[i]))
+
+    residual = np.sum(diff)
+    rsd_sq.append(residual**2)   
+    DP.append(((residual**2)/(256**2))-(theta**2))
+
+plt.figure(3)
 plt.imshow(np.reshape(gmresOutput[0],(128,128)))
 plt.title('output of gmres')
 plt.colorbar()
+
+plt.figure(4)
+plt.plot(alphas,DP)
+plt.xlabel('Alpha')
+plt.ylabel('Discrepancy Principle')
+plt.title('Krylov solver Discrepancy Principle')
 
 plt.show()
