@@ -80,7 +80,7 @@ def AT(y):
     AT_y = f_rec
     return AT_y.ravel()
 
-alpha = 0.2
+alpha = 0.1
 
 z = lambda f: AT(A(f)) + alpha*f
 

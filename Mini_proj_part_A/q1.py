@@ -35,12 +35,12 @@ percent_non_zero = 100*(non_zero_vals/(np.shape(sinogram)[0]*(np.shape(sinogram)
 rec_id = astra.data2d.create('-vol', vol_geom)
 # Set up the parameters for a reconstruction via back-projection
 cfg = astra.astra_dict('BP')
-# cfg['ReconstructionDataId'] = rec_id
-# cfg['ProjectionDataId'] = sinogram_id
-# cfg['ProjectorId'] = projector_id
-cfg['ReconstructionDataId'] = 4
-cfg['ProjectionDataId'] = 3
-cfg['ProjectorId'] = 1
+cfg['ReconstructionDataId'] = rec_id
+cfg['ProjectionDataId'] = sinogram_id
+cfg['ProjectorId'] = projector_id
+# cfg['ReconstructionDataId'] = 5
+# cfg['ProjectionDataId'] = 3
+# cfg['ProjectorId'] = 1
 print(cfg)
 # Create the algorithm object from the configuration structure
 alg_id = astra.algorithm.create(cfg)

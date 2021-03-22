@@ -1,6 +1,3 @@
-
-
-
 import numpy as np
 import astra
 import matplotlib.pyplot as plt

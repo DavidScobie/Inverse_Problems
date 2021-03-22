@@ -103,8 +103,7 @@ def AT(y):
     AT_y = f_rec
     return AT_y.ravel()
 
-# alpha = 0.001
-alpha = 0.022
+alpha = 0.001
 
 z = lambda f: AT(A(f)) + (alpha*(DT_D@sparse.csr_matrix(np.reshape(f,(128**2,1))).toarray())).ravel()
 
