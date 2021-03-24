@@ -52,8 +52,8 @@ def AT(y):
     return AT_y.ravel()
 
 #S function
-bit = []
 def thresholdFunction(coeffs,tRange,tVal):
+    bit = []
     arr,coeff_slices = pywt.coeffs_to_array(coeffs)
     for i in range (tRange):
         small_bit = coeffs[i]
@@ -65,8 +65,23 @@ def thresholdFunction(coeffs,tRange,tVal):
     coeffsT = pywt.array_to_coeffs(new_arr, coeff_slices, output_format='wavedec2')
     return coeffsT
 
-Af_min_g = A(f - g)
-plt.figure(2)
-plt.imshow(f - 0.001*np.reshape(AT(Af_min_g),(256,256)),cmap = 'gray')
+lambd = 0.001
+
+def iterative(f):
+    Af_min_g = A(f - g)
+    AT_bit = np.reshape(AT(Af_min_g),(256,256))
+    f_min_bit = f - lambd*AT_bit
+    wave = pywt.wavedec2(f_min_bit,'haar',level = 2)
+    Essed = thresholdFunction(wave,2,1)
+    inv_wave = pywt.waverec2(Essed,'haar')
+    return inv_wave
+
+for i in range (10):
+    f1 = g
+    f = iterative(f)
+    print(np.sum(f1)-np.sum(f))
+
+plt.figure(3)
+plt.imshow(f,cmap = 'gray')
 
 plt.show()
