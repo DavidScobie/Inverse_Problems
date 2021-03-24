@@ -11,7 +11,7 @@ forig=f
 # plt.colorbar()
 
 
-coeffs = pywt.wavedec2(f,'haar',level = 2)
+coeffs = pywt.wavedec2(f,'haar',level = 4)
 # print(len(coeffs))
 # print(np.shape(coeffs[0]))
 # print(np.shape((coeffs[1][0])))
@@ -72,20 +72,35 @@ coeffs = pywt.wavedec2(f,'haar',level = 2)
 # plt.imshow(arrT,cmap='gray')
 # plt.colorbar()
 
-
+bit = []
 def thresholdFunction(coeffs,tRange,tVal):
 
     arr,coeff_slices = pywt.coeffs_to_array(coeffs)
-    small_arr,rubbish = pywt.coeffs_to_array(coeffs[0:tRange][:])
-    new_arr = arr
-    print(np.shape(small_arr))
-    print(np.shape(small_arr)[0])
+    # small_arr = pywt.coeffs_to_array(coeffs[0:tRange][:])
+    # small_bit = coeffs[0]
 
-    for i in range (np.shape(small_arr)[0]):
-        for j in range (np.shape(small_arr)[0]):
-    # for i in range (128):
-    #     for j in range (128):
-            # print(i)
+    for i in range (tRange):
+        small_bit = coeffs[i]
+        print(np.shape(small_bit)[1])
+        bit.append(np.shape(small_bit)[1])
+    print(np.sum(bit))
+
+
+
+
+
+
+
+    # print(np.shape(small_bit)[0])
+    small_arr = pywt.coeffs_to_array(coeffs[0:tRange][:])
+    new_arr = arr
+    # print(np.shape(small_arr))
+    # print(np.shape(small_arr)[0])
+    for i in range (np.sum(bit)):
+        for j in range (np.sum(bit)):
+
+    # for i in range (np.shape(small_arr)[0]):
+    #     for j in range (np.shape(small_arr)[0]):
             new_arr[i][j] = pywt.threshold(arr[i][j],tVal,'hard')
 
     plt.figure(5)
