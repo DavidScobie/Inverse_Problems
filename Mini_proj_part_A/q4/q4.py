@@ -10,7 +10,6 @@ plt.figure(0)
 imgplot = plt.imshow(f,cmap = 'gray')
 plt.colorbar()
 
-
 coeffs = pywt.wavedec2(f,'haar',level = 4)
 
 arr,coeff_slices = pywt.coeffs_to_array(coeffs)
@@ -25,18 +24,14 @@ plt.colorbar()
 
 bit = []
 def thresholdFunction(coeffs,tRange,tVal):
-
     arr,coeff_slices = pywt.coeffs_to_array(coeffs)
-
     for i in range (tRange):
         small_bit = coeffs[i]
         bit.append(np.shape(small_bit)[1])
-
     new_arr = arr
     for i in range (np.sum(bit)):
         for j in range (np.sum(bit)):
             new_arr[i][j] = pywt.threshold(arr[i][j],tVal,'hard')
-
     coeffsT = pywt.array_to_coeffs(new_arr, coeff_slices, output_format='wavedec2')
     return coeffsT
 
