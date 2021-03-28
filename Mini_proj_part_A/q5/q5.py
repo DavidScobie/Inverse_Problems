@@ -6,8 +6,9 @@ import astra
 from scipy.ndimage.filters import gaussian_filter
 
 #image f
-img = mpimg.imread('Cameraman256.png')
-f = np.float32(img)
+f = np.load('SLphan.npy')
+# img = mpimg.imread('Cameraman256.png')
+# f = np.float32(img)
 forig=f
 plt.figure(0)
 imgplot = plt.imshow(f,cmap = 'gray')
@@ -18,10 +19,8 @@ theta = 0.01
 sigma = 2
 f = gaussian_filter(f,sigma)
 w,h = f.shape
-g = f + theta*np.random.randn(w,h)
-plt.figure(1)
-imgplot = plt.imshow(g,cmap = 'gray')
-plt.colorbar()
+noised = f 
+# noised = f + theta*np.random.randn(w,h)
 
 #Set up sinogram params
 vol_geom = astra.create_vol_geom(w,h)
@@ -33,14 +32,14 @@ proj_geom = astra.create_proj_geom('parallel',1.,det_count,angles)
 projector_id = astra.create_projector('strip', proj_geom, vol_geom)
 sinogram_id, sinogram = astra.create_sino(f, projector_id,  returnData=True)
 rec_id = astra.data2d.create('-vol', vol_geom)
-cfg = astra.astra_dict('FBP')
+cfg = astra.astra_dict('BP')
 cfg['ReconstructionDataId'] = rec_id
 cfg['ProjectionDataId'] = sinogram_id
 cfg['ProjectorId'] = projector_id
 alg_id = astra.algorithm.create(cfg)
 
 def A(f):
-    f_resh = np.reshape(f,(256,256))
+    f_resh = np.reshape(f,(128,128))
     sinogram_id, sinogram = astra.create_sino(f_resh, projector_id,  returnData=True)
     A_x = sinogram
     return A_x
@@ -49,7 +48,7 @@ def AT(y):
     astra.algorithm.run(alg_id)
     f_rec = astra.data2d.get(rec_id)
     AT_y = f_rec
-    return AT_y.ravel()
+    return AT_y
 
 #S function
 def thresholdFunction(coeffs,tRange,tVal):
@@ -65,23 +64,46 @@ def thresholdFunction(coeffs,tRange,tVal):
     coeffsT = pywt.array_to_coeffs(new_arr, coeff_slices, output_format='wavedec2')
     return coeffsT
 
-lambd = 0.001
+sinogram_id, sinogram = astra.create_sino(f, projector_id,  returnData=True)
+g = astra.functions.add_noise_to_sino(sinogram,100)
+# g = A(noised)
+plt.figure(1)
+imgplot = plt.imshow(g,cmap = 'gray')
+plt.colorbar()
 
+lambd = 0.000001
+
+f = np.zeros([128,128])
 def iterative(f):
-    Af_min_g = A(f - g)
-    AT_bit = np.reshape(AT(Af_min_g),(256,256))
+    # Af_min_g = A(f - forig)
+    Af_min_g = A(f) - g
+    # print(np.sum(Af_min_g))
+    AT_bit = AT(Af_min_g)
     f_min_bit = f - lambd*AT_bit
-    wave = pywt.wavedec2(f_min_bit,'haar',level = 2)
-    Essed = thresholdFunction(wave,2,1)
-    inv_wave = pywt.waverec2(Essed,'haar')
-    return inv_wave
+    # print(np.sum(f_min_bit))
+    # wave = pywt.wavedec2(f_min_bit,'haar',level = 2)
+    # Essed = thresholdFunction(wave,2,1)
+    # inv_wave = pywt.waverec2(Essed,'haar')
+    # return inv_wave
+    # xmax, xmin = f_min_bit.max(), f_min_bit.min()
+    # f_min_bit = (f_min_bit - xmin)/(xmax - xmin)
+    # return inv_wave
+    return f_min_bit
 
 for i in range (10):
-    f1 = g
+    f1 = f
+    # f = iterative(f)
+    
+    # print(abs(np.sum(f)-np.sum(forig)))
+    # if i >= 2:
+    #     xmax, xmin = f.max(), f.min()
+    #     f = (f - xmin)/(xmax - xmin)
     f = iterative(f)
+    # print(abs(np.sum(f)-np.sum(forig)))
     print(np.sum(f1)-np.sum(f))
 
 plt.figure(3)
 plt.imshow(f,cmap = 'gray')
+plt.colorbar()
 
 plt.show()

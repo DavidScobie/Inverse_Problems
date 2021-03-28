@@ -31,7 +31,7 @@ def thresholdFunction(coeffs,tRange,tVal):
     new_arr = arr
     for i in range (np.sum(bit)):
         for j in range (np.sum(bit)):
-            new_arr[i][j] = pywt.threshold(arr[i][j],tVal,'hard')
+            new_arr[i][j] = pywt.threshold(np.array([arr[i][j]]),tVal,'soft')
     coeffsT = pywt.array_to_coeffs(new_arr, coeff_slices, output_format='wavedec2')
     return coeffsT
 
