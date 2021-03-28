@@ -98,7 +98,7 @@ def iterative(f):
     #wavelet decomposition
     wave = pywt.wavedec2(f_min_all_sorts,'haar',level = 6)
     #threshold function
-    Essed = thresholdFunction(wave,2,mu*lambd)
+    Essed = thresholdFunction(wave,5,mu*lambd)
     #Essed = wave
     #wavelet recomposition
     inv_wave = pywt.waverec2(Essed,'haar')
