@@ -71,7 +71,7 @@ plt.figure(1)
 imgplot = plt.imshow(g,cmap = 'gray')
 plt.colorbar()
 
-lambd = 0.000001
+lambd = 0.0001
 
 f = np.zeros([128,128])
 def iterative(f):
