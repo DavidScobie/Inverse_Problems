@@ -22,39 +22,9 @@ sinogram_id, sinogram = astra.create_sino(f, projector_id,  returnData=True)
 #g is a noisy sinogram of f
 g = astra.functions.add_noise_to_sino(sinogram,100)
 
-# plt.figure(0)
-# plt.imshow(g)
-
-# plt.figure(1)
-# plt.imshow(sinogram)
-
-#Af_min_g is just noise
-Af_min_g = sinogram - g
-# plt.figure(2)
-# plt.imshow(Af_min_g)
-
-#Set up params for AT of Af_min_g
-Af_min_g_id = astra.data2d.create('-sino',proj_geom,Af_min_g)
-cfg = astra.astra_dict('BP')
-rec_id = astra.data2d.create('-vol', vol_geom)
-cfg['ReconstructionDataId'] = rec_id
-cfg['ProjectionDataId'] = Af_min_g_id
-cfg['ProjectorId'] = projector_id
-alg_id = astra.algorithm.create(cfg)
-astra.algorithm.run(alg_id)
-AT_Af_min_g = astra.data2d.get(rec_id)
-
-#AT(Af_min_g) is also just noise
-# plt.figure(3)
-# plt.imshow(AT_Af_min_g)
-
-#define lambda
+#define lambda and mu
 lambd = 0.00005
 mu = 20
-
-f_min_all_sorts = f - lambd*AT_Af_min_g
-# plt.figure(4)
-# plt.imshow(f_min_all_sorts)
 
 def thresholdFunction(coeffs,tRange,tVal):
     bit = []
@@ -76,7 +46,6 @@ def iterative(f):
 
     #then we add noise to it to make g
     g = astra.functions.add_noise_to_sino(sinogram,100)
-    # sinogram_id, g = astra.create_sino(forig, projector_id,  returnData=True)
 
     #take these away from each other
     Af_min_g = Afk - g
@@ -99,16 +68,11 @@ def iterative(f):
     wave = pywt.wavedec2(f_min_all_sorts,'haar',level = 6)
     #threshold function
     Essed = thresholdFunction(wave,5,mu*lambd)
-    #Essed = wave
     #wavelet recomposition
     inv_wave = pywt.waverec2(Essed,'haar')
 
     return inv_wave
-    # return f_min_all_sorts
 
-# theta = 0.01
-# sigma = 2
-# f = gaussian_filter(f,sigma) + theta*np.random.randn(w,h)
 f = np.ones([128,128])
 
 plt.figure(0)
@@ -119,13 +83,10 @@ print(np.sum(abs(forig - f)))
 fbef = f
 i=0
 while np.sum(abs(forig - fbef)) >= np.sum(abs(forig - f)) and i <= 50:
-# for i in range(70):
     fbef = f
     i=i+1
     f = iterative(f)
     print(np.sum(abs(forig - f)))
-    # plt.figure(i)
-    # plt.imshow(f)
 
 #checking what the noisy g actually looks like
 gNoisy_id = astra.data2d.create('-sino',proj_geom,sinogram+g)
@@ -143,9 +104,8 @@ f_rec = astra.data2d.get(rec_id)
 plt.figure(1)
 plt.imshow(f_rec)
 plt.colorbar()
-
-
 print(np.sum(abs(forig - f_rec)))
+
 plt.figure(2)
 plt.imshow(f)
 plt.colorbar()

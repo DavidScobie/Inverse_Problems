@@ -10,7 +10,7 @@ plt.figure(0)
 imgplot = plt.imshow(f,cmap = 'gray')
 plt.colorbar()
 
-coeffs = pywt.wavedec2(f,'haar',level = 4)
+coeffs = pywt.wavedec2(f,'haar',level = 6)
 
 arr,coeff_slices = pywt.coeffs_to_array(coeffs)
 plt.figure(1)
@@ -35,7 +35,7 @@ def thresholdFunction(coeffs,tRange,tVal):
     coeffsT = pywt.array_to_coeffs(new_arr, coeff_slices, output_format='wavedec2')
     return coeffsT
 
-coT = thresholdFunction(coeffs,3,1)
+coT = thresholdFunction(coeffs,1,1)
 f_rec2 = pywt.waverec2(coT,'haar')
 plt.figure(4)
 plt.imshow(f_rec2,cmap = 'gray')
