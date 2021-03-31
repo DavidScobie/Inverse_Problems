@@ -69,7 +69,11 @@ plt.ylabel('projection sample')
 plt.colorbar()
 
 #g
-g = np.transpose(new_sino1.ravel())
+gstart = new_sino1[:,0:60]
+gend = new_sino1[:,120:]
+gtog = np.hstack((gstart,gend))
+# g = np.transpose(gtog.ravel())
+g = np.reshape(gtog,(18000,1))
 print(np.shape(g))
 
 #mask
@@ -113,6 +117,10 @@ D_2D_trans = sparse.csr_matrix.transpose(scipy.sparse.csr_matrix(D2d))
 DT_D = D_2D_trans@D2d
 Lapl = sparse.lil_matrix(sparse.csr_matrix(DT_D)[0:(180*150),0:(180*150)])
 
+#check IT*g
+ITg_array = (IT@sparse.csr_matrix(g)).toarray().ravel()
+print(np.shape(ITg_array.ravel()))
+
 #Next implement the gmres krylov solver
 alpha = 0.1
 
@@ -120,7 +128,7 @@ z = lambda f: (((IT@I)-(alpha*-Lapl))*f).ravel()
 
 A = LinearOperator((180*150,180*150),matvec = z)
 
-ATg = lambda g: IT@sparse.csr_matrix(g)
+ATg = lambda g: (IT@sparse.csr_matrix(g)).toarray().ravel()
 
 class gmres_counter(object):
     def __init__(self, disp=True):
