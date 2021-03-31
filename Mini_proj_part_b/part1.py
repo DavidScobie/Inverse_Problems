@@ -1,6 +1,9 @@
 import numpy as np
 import astra
 import matplotlib.pyplot as plt
+import scipy.ndimage
+from scipy import sparse
+from scipy.sparse import csr_matrix
 
 #Load phantom in
 f = np.load('SLphan.npy')
@@ -62,6 +65,35 @@ plt.xlabel('angle')
 plt.ylabel('projection sample')
 plt.colorbar()
 
+#Constructing the big sparse I matrix
+mask = np.ones([150,180])
+mask[:,60:120] = np.zeros([150,60])
+print(np.shape(mask))
+flat_mask = np.reshape(mask,(150*180,1))
+print(np.shape(flat_mask[0]))
+# mind = np.where(mask==1)
+# print(np.shape(mind))
+# Isparse = scipy.sparse.identity(180*150)
+# Isparse2 = scipy.sparse.identity(180*150)
+# print(np.shape(mind[0]))
+
+big = sparse.csr_matrix(np.zeros([180*150,1]))
+print(np.shape(big))
+for i in range (180*150):
+    if flat_mask[i] == 1:
+        array = np.zeros([180*150,1])
+        array[i] = 1
+        sp_arr = sparse.csr_matrix(array)
+        big = sparse.hstack([big,sp_arr])
+    if flat_mask[i] == 0:
+        sp_arr = sparse.csr_matrix(np.zeros([180*150,1]))
+        big = sparse.hstack([big,sp_arr])
+big = sparse.lil_matrix(sparse.csr_matrix(big)[:,1:])
+print(np.shape(big))
+
+        
+# A = Isparse[mind,:]
+
 # #Filtered back projection
 # # Create a data object for the reconstruction
 # rec_id = astra.data2d.create('-vol', vol_geom)
@@ -78,4 +110,4 @@ plt.colorbar()
 # plt.figure(3)
 # plt.imshow(f_rec)
 # plt.colorbar()
-plt.show()
+# plt.show()
