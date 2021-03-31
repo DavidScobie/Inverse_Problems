@@ -122,7 +122,7 @@ ITg_array = (IT@sparse.csr_matrix(g)).toarray().ravel()
 print(np.shape(ITg_array.ravel()))
 
 #Next implement the gmres krylov solver
-alpha = 0.1
+alpha = 0.001
 
 z = lambda f: (((IT@I)-(alpha*-Lapl))*f).ravel()
 
@@ -143,23 +143,26 @@ counter = gmres_counter()
 
 gmresOutput = gmres(A,ATg(g), x0 = np.zeros((150,180)).ravel(), callback=counter, atol=1e-06)
 
+grecon = np.reshape(gmresOutput[0],(150,180))
 plt.figure(3)
-plt.imshow(np.reshape(gmresOutput[0],(150,180)),cmap='gray')
+plt.imshow((grecon),cmap='gray')
 
-# #Filtered back projection
-# # Create a data object for the reconstruction
-# rec_id = astra.data2d.create('-vol', vol_geom)
-# # Set up the parameters for a reconstruction via back-projection
-# cfg = astra.astra_dict('FBP')
-# cfg['ReconstructionDataId'] = rec_id
-# cfg['ProjectionDataId'] = sinogram_id
-# cfg['ProjectorId'] = projector_id
-# # Create the algorithm object from the configuration structure
-# alg_id = astra.algorithm.create(cfg)
-# # Run back-projection and get the reconstruction
-# astra.algorithm.run(alg_id)
-# f_rec = astra.data2d.get(rec_id)
-# plt.figure(3)
-# plt.imshow(f_rec)
-# plt.colorbar()
+
+#Filtered back projection
+# Create a data object for the reconstruction
+grecon_id = astra.data2d.create('-sino',proj_geom,np.transpose(grecon))
+rec_id = astra.data2d.create('-vol', vol_geom)
+# Set up the parameters for a reconstruction via back-projection
+cfg = astra.astra_dict('FBP')
+cfg['ReconstructionDataId'] = rec_id
+cfg['ProjectionDataId'] = grecon_id
+cfg['ProjectorId'] = projector_id
+# Create the algorithm object from the configuration structure
+alg_id = astra.algorithm.create(cfg)
+# Run back-projection and get the reconstruction
+astra.algorithm.run(alg_id)
+f_rec = astra.data2d.get(rec_id)
+plt.figure(4)
+plt.imshow(f_rec)
+plt.colorbar()
 plt.show()
