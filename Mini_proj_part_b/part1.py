@@ -68,11 +68,28 @@ plt.xlabel('angle')
 plt.ylabel('projection sample')
 plt.colorbar()
 
+#Filtered back projection of sinogram with missing window
+# Create a data object for the reconstruction
+window_sino_id = astra.data2d.create('-sino',proj_geom,np.transpose(new_sino1))
+rec_id = astra.data2d.create('-vol', vol_geom)
+# Set up the parameters for a reconstruction via back-projection
+cfg = astra.astra_dict('FBP')
+cfg['ReconstructionDataId'] = rec_id
+cfg['ProjectionDataId'] = window_sino_id
+cfg['ProjectorId'] = projector_id
+# Create the algorithm object from the configuration structure
+alg_id = astra.algorithm.create(cfg)
+# Run back-projection and get the reconstruction
+astra.algorithm.run(alg_id)
+f_rec = astra.data2d.get(rec_id)
+plt.figure(4)
+plt.imshow(f_rec)
+plt.colorbar()
+
 #g
 gstart = new_sino1[:,0:60]
 gend = new_sino1[:,120:]
 gtog = np.hstack((gstart,gend))
-# g = np.transpose(gtog.ravel())
 g = np.reshape(gtog,(18000,1))
 print(np.shape(g))
 
@@ -144,7 +161,7 @@ counter = gmres_counter()
 gmresOutput = gmres(A,ATg(g), x0 = np.zeros((150,180)).ravel(), callback=counter, atol=1e-06)
 
 grecon = np.reshape(gmresOutput[0],(150,180))
-plt.figure(3)
+plt.figure(5)
 plt.imshow((grecon),cmap='gray')
 
 
@@ -162,7 +179,7 @@ alg_id = astra.algorithm.create(cfg)
 # Run back-projection and get the reconstruction
 astra.algorithm.run(alg_id)
 f_rec = astra.data2d.get(rec_id)
-plt.figure(4)
+plt.figure(6)
 plt.imshow(f_rec)
 plt.colorbar()
 plt.show()
