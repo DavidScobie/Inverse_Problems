@@ -76,20 +76,21 @@ print(np.shape(flat_mask[0]))
 # Isparse = scipy.sparse.identity(180*150)
 # Isparse2 = scipy.sparse.identity(180*150)
 # print(np.shape(mind[0]))
-
-big = sparse.csr_matrix(np.zeros([180*150,1]))
-print(np.shape(big))
+count = -1
+I = sparse.csr_matrix(np.zeros([120*150,1]))
+print(np.shape(I))
 for i in range (180*150):
     if flat_mask[i] == 1:
-        array = np.zeros([180*150,1])
-        array[i] = 1
+        count = count + 1
+        array = np.zeros([120*150,1])
+        array[count] = 1
         sp_arr = sparse.csr_matrix(array)
-        big = sparse.hstack([big,sp_arr])
+        I = sparse.hstack([I,sp_arr])
     if flat_mask[i] == 0:
-        sp_arr = sparse.csr_matrix(np.zeros([180*150,1]))
-        big = sparse.hstack([big,sp_arr])
-big = sparse.lil_matrix(sparse.csr_matrix(big)[:,1:])
-print(np.shape(big))
+        sp_arr = sparse.csr_matrix(np.zeros([120*150,1]))
+        I = sparse.hstack([I,sp_arr])
+I = sparse.lil_matrix(sparse.csr_matrix(I)[:,1:])
+print(np.shape(I))
 
         
 # A = Isparse[mind,:]
