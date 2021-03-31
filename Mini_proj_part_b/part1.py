@@ -4,6 +4,9 @@ import matplotlib.pyplot as plt
 import scipy.ndimage
 from scipy import sparse
 from scipy.sparse import csr_matrix
+from scipy.sparse import spdiags
+from scipy.sparse.linalg import gmres
+from scipy.sparse.linalg import LinearOperator
 
 #Load phantom in
 f = np.load('SLphan.npy')
@@ -65,17 +68,17 @@ plt.xlabel('angle')
 plt.ylabel('projection sample')
 plt.colorbar()
 
-#Constructing the big sparse I matrix
+#g
+g = np.transpose(new_sino1.ravel())
+print(np.shape(g))
+
+#mask
 mask = np.ones([150,180])
 mask[:,60:120] = np.zeros([150,60])
 print(np.shape(mask))
 flat_mask = np.reshape(mask,(150*180,1))
-print(np.shape(flat_mask[0]))
-# mind = np.where(mask==1)
-# print(np.shape(mind))
-# Isparse = scipy.sparse.identity(180*150)
-# Isparse2 = scipy.sparse.identity(180*150)
-# print(np.shape(mind[0]))
+
+#Constructing the big sparse I matrix
 count = -1
 I = sparse.csr_matrix(np.zeros([120*150,1]))
 print(np.shape(I))
@@ -92,8 +95,48 @@ for i in range (180*150):
 I = sparse.lil_matrix(sparse.csr_matrix(I)[:,1:])
 print(np.shape(I))
 
-        
-# A = Isparse[mind,:]
+#Constructing IT
+IT = sparse.csr_matrix.transpose(sparse.csr_matrix(I))
+print(np.shape(IT))
+#Constructing laplacian
+mid = np.ones([1,256]).flatten()
+dat=np.array([-mid,mid])
+diags_x = np.array([0,-1])
+D1x = spdiags(dat,diags_x,256,256)
+
+D1x2d = sparse.kron(scipy.sparse.identity(256),D1x)
+D1y2d = sparse.kron(D1x,scipy.sparse.identity(256))
+
+D2d = scipy.sparse.vstack([D1x2d,D1y2d])
+
+D_2D_trans = sparse.csr_matrix.transpose(scipy.sparse.csr_matrix(D2d))
+DT_D = D_2D_trans@D2d
+Lapl = sparse.lil_matrix(sparse.csr_matrix(DT_D)[0:(180*150),0:(180*150)])
+
+#Next implement the gmres krylov solver
+alpha = 0.1
+
+z = lambda f: (((IT@I)-(alpha*-Lapl))*f).ravel()
+
+A = LinearOperator((180*150,180*150),matvec = z)
+
+ATg = lambda g: IT@sparse.csr_matrix(g)
+
+class gmres_counter(object):
+    def __init__(self, disp=True):
+        self._disp = disp
+        self.niter = 0
+    def __call__(self, rk=None):
+        self.niter += 1
+        if self._disp:
+            print('iter %3i\trk = %s' % (self.niter, str(rk)))
+
+counter = gmres_counter()
+
+gmresOutput = gmres(A,ATg(g), x0 = np.zeros((150,180)).ravel(), callback=counter, atol=1e-06)
+
+plt.figure(3)
+plt.imshow(np.reshape(gmresOutput[0],(150,180)),cmap='gray')
 
 # #Filtered back projection
 # # Create a data object for the reconstruction
@@ -111,4 +154,4 @@ print(np.shape(I))
 # plt.figure(3)
 # plt.imshow(f_rec)
 # plt.colorbar()
-# plt.show()
+plt.show()
