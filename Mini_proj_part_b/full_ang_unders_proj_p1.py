@@ -29,9 +29,10 @@ projector_id = astra.create_projector('strip', proj_geom, vol_geom)
 SLphantom = f
 sinogram_id, sinogram = astra.create_sino(SLphantom, projector_id,  returnData=True)
 print(np.shape(sinogram))
-transed = np.transpose(sinogram)
+gtog = np.transpose(sinogram)
+
 plt.figure(1)
-plt.imshow(transed)
+plt.imshow(gtog)
 plt.xlabel('angle')
 plt.ylabel('projection sample')
 plt.colorbar()
@@ -39,7 +40,10 @@ plt.colorbar()
 #Full angle with undersampled projections
 new_sino = np.zeros([150,180])
 for i in range (no_samples):
-    new_sino[:,6*i] = transed[:,i]
+    new_sino[:,6*i] = gtog[:,i]
+
+#vectorise g
+g = np.reshape(gtog,(4500,1))
 
 plt.figure(2)
 plt.imshow(new_sino)
@@ -47,71 +51,31 @@ plt.xlabel('angle')
 plt.ylabel('projection sample')
 plt.colorbar()
 
-# Create projector geometries
-no_samples = 180
-angles = np.linspace(0,np.pi,no_samples,endpoint=False)
-det_count = 150
-proj_geom = astra.create_proj_geom('parallel',1.,det_count,angles)
-# Create projector
-projector_id = astra.create_projector('strip', proj_geom, vol_geom)
-# Radon transform (generate sinogram)
-SLphantom = f
-sinogram_id, sinogram = astra.create_sino(SLphantom, projector_id,  returnData=True)
-transed = np.transpose(sinogram)
+#mask
+mask = np.zeros([150,180])
+for i in range (no_samples):
+    mask[:,6*i] = np.ones([150])
 
-#Limited angle
-new_sino1 = transed
-new_sino1[:,60:120] = np.zeros([150,60])
 plt.figure(3)
-plt.imshow(new_sino1)
+plt.imshow(mask)
 plt.xlabel('angle')
 plt.ylabel('projection sample')
 plt.colorbar()
 
-#Filtered back projection of sinogram with missing window
-# Create a data object for the reconstruction
-window_sino_id = astra.data2d.create('-sino',proj_geom,np.transpose(new_sino1))
-rec_id = astra.data2d.create('-vol', vol_geom)
-# Set up the parameters for a reconstruction via back-projection
-cfg = astra.astra_dict('FBP')
-cfg['ReconstructionDataId'] = rec_id
-cfg['ProjectionDataId'] = window_sino_id
-cfg['ProjectorId'] = projector_id
-# Create the algorithm object from the configuration structure
-alg_id = astra.algorithm.create(cfg)
-# Run back-projection and get the reconstruction
-astra.algorithm.run(alg_id)
-f_rec = astra.data2d.get(rec_id)
-plt.figure(4)
-plt.imshow(f_rec)
-plt.colorbar()
-
-#g
-gstart = new_sino1[:,0:60]
-gend = new_sino1[:,120:]
-gtog = np.hstack((gstart,gend))
-g = np.reshape(gtog,(18000,1))
-print(np.shape(g))
-
-#mask
-mask = np.ones([150,180])
-mask[:,60:120] = np.zeros([150,60])
-print(np.shape(mask))
 flat_mask = np.reshape(mask,(150*180,1))
 
 #Constructing the big sparse I matrix
 count = -1
-I = sparse.csr_matrix(np.zeros([120*150,1]))
-print(np.shape(I))
+I = sparse.csr_matrix(np.zeros([30*150,1]))
 for i in range (180*150):
     if flat_mask[i] == 1:
         count = count + 1
-        array = np.zeros([120*150,1])
+        array = np.zeros([30*150,1])
         array[count] = 1
         sp_arr = sparse.csr_matrix(array)
         I = sparse.hstack([I,sp_arr])
     if flat_mask[i] == 0:
-        sp_arr = sparse.csr_matrix(np.zeros([120*150,1]))
+        sp_arr = sparse.csr_matrix(np.zeros([30*150,1]))
         I = sparse.hstack([I,sp_arr])
 I = sparse.lil_matrix(sparse.csr_matrix(I)[:,1:])
 print(np.shape(I))
@@ -119,6 +83,7 @@ print(np.shape(I))
 #Constructing IT
 IT = sparse.csr_matrix.transpose(sparse.csr_matrix(I))
 print(np.shape(IT))
+
 #Constructing laplacian
 mid = np.ones([1,256]).flatten()
 dat=np.array([-mid,mid])
@@ -134,6 +99,11 @@ D_2D_trans = sparse.csr_matrix.transpose(scipy.sparse.csr_matrix(D2d))
 DT_D = D_2D_trans@D2d
 Lapl = sparse.lil_matrix(sparse.csr_matrix(DT_D)[0:(180*150),0:(180*150)])
 
+plt.figure(4)
+plt.imshow(sparse.lil_matrix(sparse.csr_matrix(DT_D)[0:(1000),0:(1000)]).toarray())
+
+print(np.shape(g))
+print(np.shape(IT))
 #check IT*g
 ITg_array = (IT@sparse.csr_matrix(g)).toarray().ravel()
 print(np.shape(ITg_array.ravel()))
@@ -165,21 +135,4 @@ plt.figure(5)
 plt.imshow((grecon),cmap='gray')
 
 
-#Filtered back projection
-# Create a data object for the reconstruction
-grecon_id = astra.data2d.create('-sino',proj_geom,np.transpose(grecon))
-rec_id = astra.data2d.create('-vol', vol_geom)
-# Set up the parameters for a reconstruction via back-projection
-cfg = astra.astra_dict('FBP')
-cfg['ReconstructionDataId'] = rec_id
-cfg['ProjectionDataId'] = grecon_id
-cfg['ProjectorId'] = projector_id
-# Create the algorithm object from the configuration structure
-alg_id = astra.algorithm.create(cfg)
-# Run back-projection and get the reconstruction
-astra.algorithm.run(alg_id)
-f_rec = astra.data2d.get(rec_id)
-plt.figure(6)
-plt.imshow(f_rec)
-plt.colorbar()
 plt.show()
