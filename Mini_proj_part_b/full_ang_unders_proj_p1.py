@@ -62,6 +62,30 @@ plt.xlabel('angle')
 plt.ylabel('projection sample')
 plt.colorbar()
 
+# Create projector geometries
+no_samples = 180
+angles = np.linspace(0,np.pi,no_samples,endpoint=False)
+det_count = 150
+proj_geom = astra.create_proj_geom('parallel',1.,det_count,angles)
+projector_id = astra.create_projector('strip', proj_geom, vol_geom)
+
+# Create a data object for the reconstruction
+grecon_id = astra.data2d.create('-sino',proj_geom,np.transpose(new_sino))
+rec_id = astra.data2d.create('-vol', vol_geom)
+# Set up the parameters for a reconstruction via back-projection
+cfg = astra.astra_dict('FBP')
+cfg['ReconstructionDataId'] = rec_id
+cfg['ProjectionDataId'] = grecon_id
+cfg['ProjectorId'] = projector_id
+# Create the algorithm object from the configuration structure
+alg_id = astra.algorithm.create(cfg)
+# Run back-projection and get the reconstruction
+astra.algorithm.run(alg_id)
+f_rec = astra.data2d.get(rec_id)
+plt.figure(4)
+plt.imshow(f_rec)
+plt.colorbar()
+
 flat_mask = np.reshape(mask,(150*180,1))
 
 #Constructing the big sparse I matrix
@@ -99,7 +123,7 @@ D_2D_trans = sparse.csr_matrix.transpose(scipy.sparse.csr_matrix(D2d))
 DT_D = D_2D_trans@D2d
 Lapl = sparse.lil_matrix(sparse.csr_matrix(DT_D)[0:(180*150),0:(180*150)])
 
-plt.figure(4)
+plt.figure(5)
 plt.imshow(sparse.lil_matrix(sparse.csr_matrix(DT_D)[0:(1000),0:(1000)]).toarray())
 
 print(np.shape(g))
@@ -131,10 +155,26 @@ counter = gmres_counter()
 gmresOutput = gmres(A,ATg(g), x0 = np.zeros((150,180)).ravel(), callback=counter, atol=1e-06)
 
 grecon = np.reshape(gmresOutput[0],(150,180))
-plt.figure(5)
+plt.figure(6)
 plt.imshow((grecon),cmap='gray')
 
-# plt.figure(6)
-# plt.imshow(sparse.lil_matrix(sparse.csr_matrix(IT@I)[0:(1000),0:(1000)]).toarray())
+#Filtered back projection
+
+# Create a data object for the reconstruction
+grecon_id = astra.data2d.create('-sino',proj_geom,np.transpose(grecon))
+rec_id = astra.data2d.create('-vol', vol_geom)
+# Set up the parameters for a reconstruction via back-projection
+cfg = astra.astra_dict('FBP')
+cfg['ReconstructionDataId'] = rec_id
+cfg['ProjectionDataId'] = grecon_id
+cfg['ProjectorId'] = projector_id
+# Create the algorithm object from the configuration structure
+alg_id = astra.algorithm.create(cfg)
+# Run back-projection and get the reconstruction
+astra.algorithm.run(alg_id)
+f_rec = astra.data2d.get(rec_id)
+plt.figure(7)
+plt.imshow(f_rec)
+plt.colorbar()
 
 plt.show()
