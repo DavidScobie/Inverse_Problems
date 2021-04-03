@@ -85,13 +85,13 @@ IT = sparse.csr_matrix.transpose(sparse.csr_matrix(I))
 print(np.shape(IT))
 
 #Constructing laplacian
-mid = np.ones([1,256]).flatten()
+mid = np.ones([1,180]).flatten()
 dat=np.array([-mid,mid])
 diags_x = np.array([0,-1])
-D1x = spdiags(dat,diags_x,256,256)
+D1x = spdiags(dat,diags_x,180,180)
 
-D1x2d = sparse.kron(scipy.sparse.identity(256),D1x)
-D1y2d = sparse.kron(D1x,scipy.sparse.identity(256))
+D1x2d = sparse.kron(scipy.sparse.identity(180),D1x)
+D1y2d = sparse.kron(D1x,scipy.sparse.identity(180))
 
 D2d = scipy.sparse.vstack([D1x2d,D1y2d])
 
@@ -134,5 +134,7 @@ grecon = np.reshape(gmresOutput[0],(150,180))
 plt.figure(5)
 plt.imshow((grecon),cmap='gray')
 
+# plt.figure(6)
+# plt.imshow(sparse.lil_matrix(sparse.csr_matrix(IT@I)[0:(1000),0:(1000)]).toarray())
 
 plt.show()
