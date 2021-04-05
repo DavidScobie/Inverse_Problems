@@ -19,7 +19,7 @@ plt.colorbar()
 v,h = f.shape
 vol_geom = astra.create_vol_geom(v,h)
 # Create projector geometries
-no_samples = 30
+no_samples = 15
 angles = np.linspace(0,np.pi,no_samples,endpoint=False)
 det_count = 150
 proj_geom = astra.create_proj_geom('parallel',1.,det_count,angles)
@@ -40,10 +40,10 @@ plt.colorbar()
 #Full angle with undersampled projections
 new_sino = np.zeros([150,180])
 for i in range (no_samples):
-    new_sino[:,6*i] = gtog[:,i]
+    new_sino[:,int(180/no_samples)*i] = gtog[:,i]
 
 #vectorise g
-g = np.reshape(gtog,(4500,1))
+g = np.reshape(gtog,(int(no_samples*det_count),1))
 
 plt.figure(2)
 plt.imshow(new_sino)
@@ -54,7 +54,7 @@ plt.colorbar()
 #mask
 mask = np.zeros([150,180])
 for i in range (no_samples):
-    mask[:,6*i] = np.ones([150])
+    mask[:,int(180/no_samples)*i] = np.ones([150])
 
 plt.figure(3)
 plt.imshow(mask)
@@ -63,8 +63,8 @@ plt.ylabel('projection sample')
 plt.colorbar()
 
 # Create projector geometries
-no_samples = 180
-angles = np.linspace(0,np.pi,no_samples,endpoint=False)
+no_samples1 = 180
+angles = np.linspace(0,np.pi,no_samples1,endpoint=False)
 det_count = 150
 proj_geom = astra.create_proj_geom('parallel',1.,det_count,angles)
 projector_id = astra.create_projector('strip', proj_geom, vol_geom)
@@ -90,16 +90,16 @@ flat_mask = np.reshape(mask,(150*180,1))
 
 #Constructing the big sparse I matrix
 count = -1
-I = sparse.csr_matrix(np.zeros([30*150,1]))
+I = sparse.csr_matrix(np.zeros([int(no_samples)*150,1]))
 for i in range (180*150):
     if flat_mask[i] == 1:
         count = count + 1
-        array = np.zeros([30*150,1])
+        array = np.zeros([int(no_samples)*150,1])
         array[count] = 1
         sp_arr = sparse.csr_matrix(array)
         I = sparse.hstack([I,sp_arr])
     if flat_mask[i] == 0:
-        sp_arr = sparse.csr_matrix(np.zeros([30*150,1]))
+        sp_arr = sparse.csr_matrix(np.zeros([int(no_samples)*150,1]))
         I = sparse.hstack([I,sp_arr])
 I = sparse.lil_matrix(sparse.csr_matrix(I)[:,1:])
 print(np.shape(I))
