@@ -14,38 +14,38 @@ plt.figure(0)
 plt.imshow(f)
 plt.colorbar()
 
-#Radon transform
-# Create volume geometries
+# #Radon transform
+# # Create volume geometries
 v,h = f.shape
 vol_geom = astra.create_vol_geom(v,h)
-# Create projector geometries
-no_samples = 30
-angles = np.linspace(0,np.pi,no_samples,endpoint=False)
-det_count = 150
-proj_geom = astra.create_proj_geom('parallel',1.,det_count,angles)
-# Create projector
-projector_id = astra.create_projector('strip', proj_geom, vol_geom)
-# Radon transform (generate sinogram)
-SLphantom = f
-sinogram_id, sinogram = astra.create_sino(SLphantom, projector_id,  returnData=True)
-print(np.shape(sinogram))
-transed = np.transpose(sinogram)
-plt.figure(1)
-plt.imshow(transed)
-plt.xlabel('angle')
-plt.ylabel('projection sample')
-plt.colorbar()
+# # Create projector geometries
+# no_samples = 30
+# angles = np.linspace(0,np.pi,no_samples,endpoint=False)
+# det_count = 150
+# proj_geom = astra.create_proj_geom('parallel',1.,det_count,angles)
+# # Create projector
+# projector_id = astra.create_projector('strip', proj_geom, vol_geom)
+# # Radon transform (generate sinogram)
+# SLphantom = f
+# sinogram_id, sinogram = astra.create_sino(SLphantom, projector_id,  returnData=True)
+# print(np.shape(sinogram))
+# transed = np.transpose(sinogram)
+# plt.figure(1)
+# plt.imshow(transed)
+# plt.xlabel('angle')
+# plt.ylabel('projection sample')
+# plt.colorbar()
 
-#Full angle with undersampled projections
-new_sino = np.zeros([150,180])
-for i in range (no_samples):
-    new_sino[:,6*i] = transed[:,i]
+# #Full angle with undersampled projections
+# new_sino = np.zeros([150,180])
+# for i in range (no_samples):
+#     new_sino[:,6*i] = transed[:,i]
 
-plt.figure(2)
-plt.imshow(new_sino)
-plt.xlabel('angle')
-plt.ylabel('projection sample')
-plt.colorbar()
+# plt.figure(2)
+# plt.imshow(new_sino)
+# plt.xlabel('angle')
+# plt.ylabel('projection sample')
+# plt.colorbar()
 
 # Create projector geometries
 no_samples = 180
@@ -90,6 +90,8 @@ plt.colorbar()
 gstart = new_sino1[:,0:60]
 gend = new_sino1[:,120:]
 gtog = np.hstack((gstart,gend))
+plt.figure(2)
+plt.imshow(gtog)
 g = np.reshape(gtog,(18000,1))
 print(np.shape(g))
 
@@ -97,6 +99,8 @@ print(np.shape(g))
 mask = np.ones([150,180])
 mask[:,60:120] = np.zeros([150,60])
 print(np.shape(mask))
+plt.figure(1)
+plt.imshow(mask)
 flat_mask = np.reshape(mask,(150*180,1))
 
 #Constructing the big sparse I matrix
@@ -119,6 +123,10 @@ print(np.shape(I))
 #Constructing IT
 IT = sparse.csr_matrix.transpose(sparse.csr_matrix(I))
 print(np.shape(IT))
+
+# plt.figure(7)
+# plt.imshow(np.reshape(sparse.lil_matrix(sparse.csr_matrix(IT@sparse.csr_matrix(g))).toarray(),(150,180)))
+
 #Constructing laplacian
 mid = np.ones([1,180]).flatten()
 dat=np.array([-mid,mid])
@@ -134,12 +142,15 @@ D_2D_trans = sparse.csr_matrix.transpose(scipy.sparse.csr_matrix(D2d))
 DT_D = D_2D_trans@D2d
 Lapl = sparse.lil_matrix(sparse.csr_matrix(DT_D)[0:(180*150),0:(180*150)])
 
+plt.figure(7)
+plt.imshow(sparse.lil_matrix(sparse.csr_matrix(DT_D)[0:(1000),0:(1000)]).toarray())
+
 #check IT*g
 ITg_array = (IT@sparse.csr_matrix(g)).toarray().ravel()
 print(np.shape(ITg_array.ravel()))
 
 #Next implement the gmres krylov solver
-alpha = 0.001
+alpha = 0.1
 
 z = lambda f: (((IT@I)-(alpha*-Lapl))*f).ravel()
 
