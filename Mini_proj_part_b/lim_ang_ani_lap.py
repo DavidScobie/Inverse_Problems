@@ -98,18 +98,32 @@ print(np.shape(IT))
 
 #Constructing laplacian
 mid = np.ones([1,180]).flatten()
-dat=np.array([-mid,mid])
-diags_x = np.array([0,-1])
+dat=np.array([mid,-mid])
+diags_x = np.array([0,1])
 D1x = spdiags(dat,diags_x,180,180)
 
+plt.figure(9)
+plt.imshow(D1x.toarray())
+
 D1x2d = sparse.kron(scipy.sparse.identity(180),D1x)
+D1x2d = sparse.lil_matrix(sparse.csr_matrix(D1x2d)[0:(180*150),0:(180*150)])
 D1y2d = sparse.kron(D1x,scipy.sparse.identity(180))
+D1y2d = sparse.lil_matrix(sparse.csr_matrix(D1y2d)[0:(180*150),0:(180*150)])
+print(np.shape(D1x2d))
+print(np.shape(D1y2d))
+
+plt.figure(8)
+plt.imshow(sparse.lil_matrix(sparse.csr_matrix(D1y2d)[0:(1000),0:(1000)]).toarray())
+
+plt.figure(10)
+plt.imshow(sparse.lil_matrix(sparse.csr_matrix(D1x2d)[0:(1000),0:(1000)]).toarray())
 
 D2d = scipy.sparse.vstack([D1x2d,D1y2d])
 
 D_2D_trans = sparse.csr_matrix.transpose(scipy.sparse.csr_matrix(D2d))
 DT_D = D_2D_trans@D2d
 Lapl = sparse.lil_matrix(sparse.csr_matrix(DT_D)[0:(180*150),0:(180*150)])
+# Lapl = sparse.lil_matrix(sparse.csr_matrix(DT_D))
 
 #Finding threshold T
 def printBoundary(a, m, n): 
@@ -129,8 +143,21 @@ def printBoundary(a, m, n):
 bound = printBoundary(gtog, 150, 120)
 plt.figure(7)
 plt.hist(bound,bins=30)
-perc = np.percentile(bound, 5, axis=0, keepdims=True)
+perc = np.percentile(bound, 70, axis=0, keepdims=True)
 print(perc)
+
+# #Finding gamma function
+# T=float(perc)
+# del_X_f = D1x2d@sparse.csr_matrix(np.reshape(f,(256**2,1)))
+# del_Y_f = D1y2d@sparse.csr_matrix(np.reshape(f,(256**2,1)))
+
+# del_X_f_squ = scipy.sparse.csr_matrix.multiply(scipy.sparse.csr_matrix(del_X_f),scipy.sparse.csr_matrix(del_X_f))
+# del_Y_f_squ = scipy.sparse.csr_matrix.multiply(scipy.sparse.csr_matrix(del_Y_f),scipy.sparse.csr_matrix(del_Y_f))
+# sqrt_bit = scipy.sparse.csr_matrix.sqrt(del_X_f_squ + del_Y_f_squ)
+# exponent = -sqrt_bit/T
+# gamma_diag = (np.exp(exponent.todense()))
+# gamma_diag_array = np.ravel((gamma_diag.T).sum(axis=0))
+# gamma = dia_matrix((gamma_diag_array, np.array([0])), shape=(256**2, 256**2))
 
 #Next implement the gmres krylov solver
 alpha = 0.5
