@@ -7,6 +7,7 @@ from scipy.sparse import csr_matrix
 from scipy.sparse import spdiags
 from scipy.sparse.linalg import gmres
 from scipy.sparse.linalg import LinearOperator
+from scipy.sparse import dia_matrix
 
 #Load phantom in
 f = np.load('SLphan.npy')
@@ -30,6 +31,7 @@ projector_id = astra.create_projector('strip', proj_geom, vol_geom)
 SLphantom = f
 sinogram_id, sinogram = astra.create_sino(SLphantom, projector_id,  returnData=True)
 transed = np.transpose(sinogram)
+
 plt.figure(0)
 plt.imshow(transed)
 
@@ -148,6 +150,21 @@ plt.hist(bound,bins=30)
 perc = np.percentile(bound, 70, axis=0, keepdims=True)
 print(perc)
 
+#Remaking f
+no_samples = 180
+angles = np.linspace(0,np.pi,no_samples,endpoint=False)
+det_count = 150
+proj_geom = astra.create_proj_geom('parallel',1.,det_count,angles)
+# Create projector
+projector_id = astra.create_projector('strip', proj_geom, vol_geom)
+# Radon transform (generate sinogram)
+SLphantom = f
+sinogram_id, sinogram = astra.create_sino(SLphantom, projector_id,  returnData=True)
+transed = np.transpose(sinogram)
+
+plt.figure(1)
+plt.imshow(transed)
+
 #Finding gamma function
 T=float(perc)
 del_X_f = D1x2d@sparse.csr_matrix(np.reshape(transed,(180*150,1)))
@@ -164,8 +181,14 @@ plt.figure(8)
 plt.imshow(np.reshape(gamma_diag,(150,180)),cmap='gray')
 plt.colorbar()
 
-# gamma_diag_array = np.ravel((gamma_diag.T).sum(axis=0))
-# gamma = dia_matrix((gamma_diag_array, np.array([0])), shape=(256**2, 256**2))
+gamma_diag_array = np.ravel((gamma_diag.T).sum(axis=0))
+gamma = dia_matrix((gamma_diag_array, np.array([0])), shape=(180*150, 180*150))
+
+sqrt_gam = scipy.sparse.csr_matrix.sqrt(gamma)
+sqrt_gam_dx = sqrt_gam@D1x2d
+sqrt_gam_dy = sqrt_gam@D1y2d
+sqrt_gam_D = scipy.sparse.vstack([sqrt_gam_dx,sqrt_gam_dy])
+sqrt_gam_D_trans = sparse.csr_matrix.transpose(scipy.sparse.csr_matrix(sqrt_gam_D))
 
 #Next implement the gmres krylov solver
 alpha = 0.1
