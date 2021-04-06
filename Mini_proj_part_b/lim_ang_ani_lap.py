@@ -96,12 +96,6 @@ print(np.shape(I))
 IT = sparse.csr_matrix.transpose(sparse.csr_matrix(I))
 print(np.shape(IT))
 
-# plt.figure(7)
-# plt.imshow(np.reshape(sparse.lil_matrix(sparse.csr_matrix(IT@sparse.csr_matrix(g))).toarray(),(150,180)))
-
-plt.figure(7)
-plt.imshow(sparse.lil_matrix(sparse.csr_matrix(IT[0:(1000),0:(1000)])).toarray())
-
 #Constructing laplacian
 mid = np.ones([1,180]).flatten()
 dat=np.array([-mid,mid])
@@ -117,12 +111,26 @@ D_2D_trans = sparse.csr_matrix.transpose(scipy.sparse.csr_matrix(D2d))
 DT_D = D_2D_trans@D2d
 Lapl = sparse.lil_matrix(sparse.csr_matrix(DT_D)[0:(180*150),0:(180*150)])
 
-# plt.figure(7)
-# plt.imshow(sparse.lil_matrix(sparse.csr_matrix(DT_D)[0:(1000),0:(1000)]).toarray())
+#Finding threshold T
+def printBoundary(a, m, n): 
+    bound=[]
+    for i in range(m): 
+        for j in range(n): 
+            if (i == 0): 
+                bound.append(a[i][j])
+            elif (i == m-1): 
+                bound.append(a[i][j]) 
+            elif (j == 0): 
+                bound.append(a[i][j])
+            elif (j == n-1):  
+                bound.append(a[i][j])
+    return bound
 
-#check IT*g
-ITg_array = (IT@sparse.csr_matrix(g)).toarray().ravel()
-print(np.shape(ITg_array.ravel()))
+bound = printBoundary(gtog, 150, 120)
+plt.figure(7)
+plt.hist(bound,bins=30)
+perc = np.percentile(bound, 5, axis=0, keepdims=True)
+print(perc)
 
 #Next implement the gmres krylov solver
 alpha = 0.5
