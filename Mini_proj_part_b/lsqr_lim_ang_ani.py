@@ -10,11 +10,11 @@ from scipy.sparse.linalg import LinearOperator
 from scipy.sparse import dia_matrix
 
 #Load phantom in
-f = np.load('SLphan.npy')
+SLPha = np.load('SLphan.npy')
 
 # #Radon transform
 # # Create volume geometries
-v,h = f.shape
+v,h = SLPha.shape
 vol_geom = astra.create_vol_geom(v,h)
 
 # Create projector geometries
@@ -25,12 +25,11 @@ proj_geom = astra.create_proj_geom('parallel',1.,det_count,angles)
 # Create projector
 projector_id = astra.create_projector('strip', proj_geom, vol_geom)
 # Radon transform (generate sinogram)
-SLphantom = f
-sinogram_id, sinogram = astra.create_sino(SLphantom, projector_id,  returnData=True)
-transed = np.transpose(sinogram)
+sinogram_id, sinogram = astra.create_sino(SLPha, projector_id,  returnData=True)
+f = np.transpose(sinogram)
 
 #Limited angle
-new_sino1 = transed
+new_sino1 = f
 new_sino1[:,60:120] = np.zeros([150,60])
 
 #Filtered back projection of sinogram with missing window
@@ -118,14 +117,13 @@ angles = np.linspace(0,np.pi,no_samples,endpoint=False)
 det_count = 150
 proj_geom = astra.create_proj_geom('parallel',1.,det_count,angles)
 projector_id = astra.create_projector('strip', proj_geom, vol_geom)
-SLphantom = f
-sinogram_id, sinogram = astra.create_sino(SLphantom, projector_id,  returnData=True)
-transed = np.transpose(sinogram)
+sinogram_id, sinogram = astra.create_sino(SLPha, projector_id,  returnData=True)
+f = np.transpose(sinogram)
 
 #Finding gamma function
 T=float(perc)
-del_X_f = D1x2d@sparse.csr_matrix(np.reshape(transed,(180*150,1)))
-del_Y_f = D1y2d@sparse.csr_matrix(np.reshape(transed,(180*150,1)))
+del_X_f = D1x2d@sparse.csr_matrix(np.reshape(f,(180*150,1)))
+del_Y_f = D1y2d@sparse.csr_matrix(np.reshape(f,(180*150,1)))
 
 del_X_f_squ = scipy.sparse.csr_matrix.multiply(scipy.sparse.csr_matrix(del_X_f),scipy.sparse.csr_matrix(del_X_f))
 del_Y_f_squ = scipy.sparse.csr_matrix.multiply(scipy.sparse.csr_matrix(del_Y_f),scipy.sparse.csr_matrix(del_Y_f))
@@ -144,3 +142,29 @@ sqrt_gam_D_trans = sparse.csr_matrix.transpose(scipy.sparse.csr_matrix(sqrt_gam_
 
 #lsqr solver
 alpha = 0.1
+
+def M_f(f):
+    # end_of_top = np.zeros([9000,1]).ravel()
+    top = I@sparse.csr_matrix(np.reshape(f,(180*150,1))).toarray().ravel() #I*f
+    # full_top = np.hstack[(top,end_of_top)]
+    middle = (alpha**0.5)*(D1x2d@sparse.csr_matrix(np.reshape(f,(180*150,1)))).toarray().ravel() #sqrt(alpha)*Dx*f
+    bottom = (alpha**0.5)*(D1y2d@sparse.csr_matrix(np.reshape(f,(180*150,1)))).toarray().ravel() #sqrt(alpha)*Dy*f
+    return np.vstack([top,middle,bottom])
+
+def MT_b(b):
+    b1 = np.reshape(b[0:18000],(18000,1))
+    ITg = IT@sparse.csr_matrix(np.reshape(b1,(18000,1))).ravel()
+
+    b2 = np.reshape(b[18000:],(2*(27000),1))
+    reg_bit = (alpha**0.5)*(D_2D_trans@sparse.csr_matrix(b2)).toarray().ravel()
+    return (ITg + reg_bit).ravel()
+    
+
+A = LinearOperator(((27000)*3,27000),matvec = M_f, rmatvec = MT_b)
+# siz = g.size
+b = np.vstack([np.reshape(g,(18000,1)),np.zeros((27000*2,1))])
+lsqrOutput = scipy.sparse.linalg.lsqr(A,b, x0 = np.zeros((150,180)).ravel(),atol=1.0e-6,iter_lim = 100)
+
+plt.figure(0)
+plt.imshow(np.reshape(lsqrOutput[0],(256,256)),cmap='gray')
+plt.show()
