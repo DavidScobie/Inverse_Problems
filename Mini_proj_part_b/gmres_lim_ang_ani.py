@@ -140,7 +140,7 @@ def printBoundary(a, m, n):
 bound = printBoundary(gtog, 150, 120)
 plt.figure(7)
 plt.hist(bound,bins=30)
-perc = np.percentile(bound, 70, axis=0, keepdims=True)
+perc = np.percentile(bound, 70, axis=0, keepdims=True) # any number below 65 for pecentile gives error as division by zero
 print(perc)
 
 #Remaking f
@@ -158,7 +158,8 @@ plt.figure(1)
 plt.imshow(transed)
 
 #Finding gamma function
-T=float(perc)
+# T=float(perc)
+T=4
 del_X_f = D1x2d@sparse.csr_matrix(np.reshape(transed,(180*150,1)))
 del_Y_f = D1y2d@sparse.csr_matrix(np.reshape(transed,(180*150,1)))
 
@@ -182,10 +183,14 @@ sqrt_gam_dy = sqrt_gam@D1y2d
 sqrt_gam_D = scipy.sparse.vstack([sqrt_gam_dx,sqrt_gam_dy])
 sqrt_gam_D_trans = sparse.csr_matrix.transpose(scipy.sparse.csr_matrix(sqrt_gam_D))
 
+plt.figure(9)
+plt.imshow(sparse.lil_matrix(sparse.csr_matrix(gamma)[3100:5600,3100:5600]).toarray())
+
 #Next implement the gmres krylov solver
 alpha = 0.1
 
-z = lambda f: (((IT@I)+(alpha*DT_D))*f).ravel()
+z = lambda f: (((IT@I)+(alpha*(sqrt_gam_D_trans@sqrt_gam_D)))*f).ravel()
+# z = lambda f: (((IT@I)+(alpha*DT_D))*f).ravel()
 
 A = LinearOperator((180*150,180*150),matvec = z)
 
@@ -202,7 +207,7 @@ class gmres_counter(object):
 
 counter = gmres_counter()
 
-gmresOutput = gmres(A,ATg(g), x0 = np.zeros((150,180)).ravel(), callback=counter, atol=1e-06, maxiter=100)
+gmresOutput = gmres(A,ATg(g), x0 = np.zeros((150,180)).ravel(), callback=counter, atol=1e-06)
 
 grecon = np.reshape(gmresOutput[0],(150,180))
 plt.figure(5)
