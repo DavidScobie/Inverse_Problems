@@ -19,7 +19,7 @@ plt.colorbar()
 v,h = f.shape
 vol_geom = astra.create_vol_geom(v,h)
 # Create projector geometries
-no_samples = 6
+no_samples = 30
 angles = np.linspace(0,np.pi,no_samples,endpoint=False)
 det_count = 150
 proj_geom = astra.create_proj_geom('parallel',1.,det_count,angles)
