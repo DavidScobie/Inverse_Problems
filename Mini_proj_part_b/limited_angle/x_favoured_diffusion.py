@@ -7,7 +7,6 @@ from scipy.sparse import csr_matrix
 from scipy.sparse import spdiags
 from scipy.sparse.linalg import gmres
 from scipy.sparse.linalg import LinearOperator
-from scipy.sparse import dia_matrix
 
 #Load phantom in
 f = np.load('SLphan.npy')
@@ -31,9 +30,6 @@ projector_id = astra.create_projector('strip', proj_geom, vol_geom)
 SLphantom = f
 sinogram_id, sinogram = astra.create_sino(SLphantom, projector_id,  returnData=True)
 transed = np.transpose(sinogram)
-
-plt.figure(0)
-plt.imshow(transed)
 
 #Limited angle
 new_sino1 = transed
@@ -100,99 +96,42 @@ print(np.shape(I))
 IT = sparse.csr_matrix.transpose(sparse.csr_matrix(I))
 print(np.shape(IT))
 
+# plt.figure(7)
+# plt.imshow(np.reshape(sparse.lil_matrix(sparse.csr_matrix(IT@sparse.csr_matrix(g))).toarray(),(150,180)))
+
+plt.figure(7)
+plt.imshow(sparse.lil_matrix(sparse.csr_matrix(IT[0:(1000),0:(1000)])).toarray())
+
 #Constructing laplacian
 mid = np.ones([1,180]).flatten()
-dat=np.array([mid,-mid])
-diags_x = np.array([0,1])
+dat=np.array([-mid,mid])
+diags_x = np.array([0,-1])
 D1x = spdiags(dat,diags_x,180,180)
 
-# plt.figure(9)
-# plt.imshow(D1x.toarray())
-
 D1x2d = sparse.kron(scipy.sparse.identity(180),D1x)
-D1x2d = sparse.lil_matrix(sparse.csr_matrix(D1x2d)[0:(180*150),0:(180*150)])
-D1y2d = sparse.kron(D1x,scipy.sparse.identity(180))
-D1y2d = sparse.lil_matrix(sparse.csr_matrix(D1y2d)[0:(180*150),0:(180*150)])
-print(np.shape(D1x2d))
-print(np.shape(D1y2d))
+# D1y2d = sparse.kron(D1x,scipy.sparse.identity(180))
+mid = np.zeros([1,180*180]).flatten()
+dat = np.array([mid])
+diags_x = np.array([0])
+D1y2d = spdiags(dat,diags_x,180*180,180*180)
 
 D2d = scipy.sparse.vstack([D1x2d,D1y2d])
 
 D_2D_trans = sparse.csr_matrix.transpose(scipy.sparse.csr_matrix(D2d))
 DT_D = D_2D_trans@D2d
-Lapl = sparse.lil_matrix(sparse.csr_matrix(DT_D))
+Lapl = sparse.lil_matrix(sparse.csr_matrix(DT_D)[0:(180*150),0:(180*150)])
 
-#Finding threshold T
-def printBoundary(a, m, n): 
-    bound=[]
-    for i in range(m): 
-        for j in range(n): 
-            if (i == 0): 
-                bound.append(a[i][j])
-            elif (i == m-1): 
-                bound.append(a[i][j]) 
-            elif (j == 0): 
-                bound.append(a[i][j])
-            elif (j == n-1):  
-                bound.append(a[i][j])
-    return bound
-
-bound = printBoundary(gtog, 150, 120)
 plt.figure(7)
-plt.hist(bound,bins=30)
-perc = np.percentile(bound, 70, axis=0, keepdims=True) # any number below 65 for pecentile gives error as division by zero
-print(perc)
+plt.imshow(sparse.lil_matrix(sparse.csr_matrix(DT_D)[0:(1000),0:(1000)]).toarray())
 
-#Remaking f
-no_samples = 180
-angles = np.linspace(0,np.pi,no_samples,endpoint=False)
-det_count = 150
-proj_geom = astra.create_proj_geom('parallel',1.,det_count,angles)
-# Create projector
-projector_id = astra.create_projector('strip', proj_geom, vol_geom)
-# Radon transform (generate sinogram)
-SLphantom = f
-sinogram_id, sinogram = astra.create_sino(SLphantom, projector_id,  returnData=True)
-transed = np.transpose(sinogram)
-plt.figure(1)
-plt.imshow(transed)
-
-#Finding gamma function
-# T=float(perc)
-T=4
-del_X_f = D1x2d@sparse.csr_matrix(np.reshape(new_sino1,(180*150,1)))
-del_Y_f = D1y2d@sparse.csr_matrix(np.reshape(new_sino1,(180*150,1)))
-
-del_X_f_squ = scipy.sparse.csr_matrix.multiply(scipy.sparse.csr_matrix(del_X_f),scipy.sparse.csr_matrix(del_X_f))
-del_Y_f_squ = scipy.sparse.csr_matrix.multiply(scipy.sparse.csr_matrix(del_Y_f),scipy.sparse.csr_matrix(del_Y_f))
-sqrt_bit = scipy.sparse.csr_matrix.sqrt(del_X_f_squ + del_Y_f_squ)
-exponent = -sqrt_bit/T
-gamma_diag = (np.exp(exponent.todense()))
-
-#plotting gamma values
-plt.figure(8)
-plt.imshow(np.reshape(gamma_diag,(150,180)),cmap='gray')
-plt.colorbar()
-
-gamma_diag_array = np.ravel((gamma_diag.T).sum(axis=0))
-gamma = dia_matrix((gamma_diag_array, np.array([0])), shape=(180*150, 180*150))
-
-sqrt_gam = scipy.sparse.csr_matrix.sqrt(gamma)
-sqrt_gam_dx = sqrt_gam@D1x2d
-sqrt_gam_dy = sqrt_gam@D1y2d
-sqrt_gam_D = scipy.sparse.vstack([sqrt_gam_dx,sqrt_gam_dy])
-sqrt_gam_D_trans = sparse.csr_matrix.transpose(scipy.sparse.csr_matrix(sqrt_gam_D))
-
-plt.figure(9)
-plt.imshow(sparse.lil_matrix(sparse.csr_matrix(gamma)[3100:5600,3100:5600]).toarray())
-
-def const_gamma()
+#check IT*g
+ITg_array = (IT@sparse.csr_matrix(g)).toarray().ravel()
+print(np.shape(ITg_array.ravel()))
 
 #Next implement the gmres krylov solver
-alpha = 0.1
+alpha = 0.5
 
-# z = lambda f: (((IT@I)+(alpha*(sqrt_gam_D_trans@sqrt_gam_D)))*f).ravel()
-z = lambda f: (((IT@I)+(alpha*(sqrt_gam_D_trans@sqrt_gam_D)))*f).ravel()
+z = lambda f: (((IT@I)-(alpha*-Lapl))*f).ravel()
 
 A = LinearOperator((180*150,180*150),matvec = z)
 
