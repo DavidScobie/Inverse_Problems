@@ -14,6 +14,7 @@ f = np.load('SLphan.npy')
 plt.figure(0)
 plt.imshow(f)
 plt.colorbar()
+forig = f
 
 #Radon transform
 # Create volume geometries
@@ -201,18 +202,42 @@ D_2D_trans = sparse.csr_matrix.transpose(scipy.sparse.csr_matrix(D2d))
 DT_D = D_2D_trans@D2d
 Lapl = sparse.lil_matrix(sparse.csr_matrix(DT_D)[0:(128**2),0:(128**2)])
 
-z = lambda f: ((new_I-(new_alph*-Lapl))*f).ravel()
+DP=[]
+rsd_sq=[]
+#no noise added to the image
+theta = 0
 
-A = LinearOperator((128**2,128**2),matvec = z)
+powers = np.linspace(-6,-0,num=10)
+alphas = np.exp(powers)
+for alpha in (alphas):
+    diff = []
 
-ATg = lambda g: (new_I@sparse.csr_matrix(g_new)).toarray().ravel()
+    z = lambda f: ((new_I-(alpha*-Lapl))*f).ravel()
 
-counter = gmres_counter()
+    A = LinearOperator((128**2,128**2),matvec = z)
 
-gmresOutput = gmres(A,ATg(g), x0 = np.zeros((128,128)).ravel(), callback=counter, atol=1e-06)
+    ATg = lambda g: (new_I@sparse.csr_matrix(g_new)).toarray().ravel()
+
+    counter = gmres_counter()
+
+    gmresOutput = gmres(A,ATg(g), x0 = np.zeros((128,128)).ravel(), callback=counter, atol=1e-06)
+
+    long_f = forig.ravel()
+    long_gmres = gmresOutput[0].ravel()
+
+    for i in range (128**2):
+        diff.append(np.abs(long_f[i]-long_gmres[i]))
+
+    residual = np.sum(diff)
+    rsd_sq.append(residual**2)   
+    DP.append(((residual**2)/(256**2))-(theta**2))
 
 grecon = np.reshape(gmresOutput[0],(128,128))
+
 plt.figure(9)
-plt.imshow(grecon)
+plt.plot(alphas,DP)
+plt.xlabel('Alpha')
+plt.ylabel('Discrepancy Principle')
+plt.title('Krylov solver Discrepancy Principle')
 
 plt.show()
