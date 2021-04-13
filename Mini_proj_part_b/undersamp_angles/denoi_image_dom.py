@@ -182,7 +182,7 @@ plt.imshow(f_rec)
 plt.colorbar()
 
 #Denoising in image domain
-new_alph = 0.5
+new_alph = 0.12
 g_new = np.reshape(f_rec,(int(128**2),1))
 new_I = identity(128**2)
 

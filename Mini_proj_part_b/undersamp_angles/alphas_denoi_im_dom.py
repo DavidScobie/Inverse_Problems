@@ -207,7 +207,7 @@ rsd_sq=[]
 #no noise added to the image
 theta = 0
 
-powers = np.linspace(-6,-0,num=10)
+powers = np.linspace(-6,-0,num=15)
 alphas = np.exp(powers)
 for alpha in (alphas):
     diff = []
