@@ -138,7 +138,7 @@ ITg_array = (IT@sparse.csr_matrix(g)).toarray().ravel()
 print(np.shape(ITg_array.ravel()))
 
 #Next implement the gmres krylov solver
-alpha = 0.01
+alpha = 0.0067
 
 z = lambda f: (((IT@I)-(alpha*-Lapl))*f).ravel()
 
