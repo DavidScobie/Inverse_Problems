@@ -1,3 +1,4 @@
+#Take the code from full_ang_unders_proj_p1.py and explore different alpha values for it.
 import numpy as np
 import astra
 import matplotlib.pyplot as plt
@@ -5,7 +6,6 @@ import scipy.ndimage
 from scipy import sparse
 from scipy.sparse import csr_matrix
 from scipy.sparse import spdiags
-from scipy.sparse import identity
 from scipy.sparse.linalg import gmres
 from scipy.sparse.linalg import LinearOperator
 
@@ -13,6 +13,20 @@ from scipy.sparse.linalg import LinearOperator
 f = np.load('SLphan.npy')
 plt.figure(0)
 plt.imshow(f)
+plt.colorbar()
+
+#Fully sampled sinogram
+#Set up sinogram params
+w,h = f.shape
+vol_geom = astra.create_vol_geom(w,h)
+angles = np.linspace(0,np.pi,180,endpoint=False)
+det_count = 150
+proj_geom = astra.create_proj_geom('parallel',1.,det_count,angles)
+projector_id = astra.create_projector('strip', proj_geom, vol_geom)
+sinogram_id, sinogram = astra.create_sino(f, projector_id,  returnData=True)
+forig = np.transpose(sinogram)
+plt.figure(8)
+plt.imshow(forig)
 plt.colorbar()
 
 #Radon transform
@@ -130,21 +144,6 @@ Lapl = sparse.lil_matrix(sparse.csr_matrix(DT_D)[0:(180*150),0:(180*150)])
 plt.figure(5)
 plt.imshow(sparse.lil_matrix(sparse.csr_matrix(DT_D)[0:(1000),0:(1000)]).toarray())
 
-print(np.shape(g))
-print(np.shape(IT))
-#check IT*g
-ITg_array = (IT@sparse.csr_matrix(g)).toarray().ravel()
-print(np.shape(ITg_array.ravel()))
-
-#Next implement the gmres krylov solver
-alpha = 0.01
-
-z = lambda f: (((IT@I)-(alpha*-Lapl))*f).ravel()
-
-A = LinearOperator((180*150,180*150),matvec = z)
-
-ATg = lambda g: (IT@sparse.csr_matrix(g)).toarray().ravel()
-
 class gmres_counter(object):
     def __init__(self, disp=True):
         self._disp = disp
@@ -154,13 +153,46 @@ class gmres_counter(object):
         if self._disp:
             print('iter %3i\trk = %s' % (self.niter, str(rk)))
 
-counter = gmres_counter()
+DP=[]
+rsd_sq=[]
+#no noise added to the image
+theta = 0
 
-gmresOutput = gmres(A,ATg(g), x0 = np.zeros((150,180)).ravel(), callback=counter, atol=1e-06)
+powers = np.linspace(-6,-4,num=15)
+alphas = np.exp(powers)
+for alpha in (alphas):
+    diff = []
+
+    #Next implement the gmres krylov solver
+
+
+    z = lambda f: (((IT@I)-(alpha*-Lapl))*f).ravel()
+
+    A = LinearOperator((180*150,180*150),matvec = z)
+
+    ATg = lambda g: (IT@sparse.csr_matrix(g)).toarray().ravel()
+
+    counter = gmres_counter()
+
+    gmresOutput = gmres(A,ATg(g), x0 = np.zeros((150,180)).ravel(), callback=counter, atol=1e-06)
+
+    long_f = forig.ravel()
+    long_gmres = gmresOutput[0].ravel()
+
+    for i in range (150*180):
+        diff.append(np.abs(long_f[i]-long_gmres[i]))
+
+    residual = np.sum(diff)
+    rsd_sq.append(residual**2)   
+    DP.append(((residual**2)/(150*180))-(theta**2))
 
 grecon = np.reshape(gmresOutput[0],(150,180))
-plt.figure(6)
-plt.imshow((grecon),cmap='gray')
+
+plt.figure(9)
+plt.plot(alphas,DP)
+plt.xlabel('Alpha')
+plt.ylabel('Discrepancy Principle')
+plt.title('Krylov solver Discrepancy Principle')
 
 #Filtered back projection
 
@@ -180,39 +212,5 @@ f_rec = astra.data2d.get(rec_id)
 plt.figure(7)
 plt.imshow(f_rec)
 plt.colorbar()
-
-#Denoising in image domain
-new_alph = 0.12
-g_new = np.reshape(f_rec,(int(128**2),1))
-new_I = identity(128**2)
-
-#New Laplacian
-mid = np.ones([1,128]).flatten()
-dat=np.array([-mid,mid])
-diags_x = np.array([0,-1])
-D1x = spdiags(dat,diags_x,128,128)
-
-D1x2d = sparse.kron(scipy.sparse.identity(128),D1x)
-D1y2d = sparse.kron(D1x,scipy.sparse.identity(128))
-
-D2d = scipy.sparse.vstack([D1x2d,D1y2d])
-
-D_2D_trans = sparse.csr_matrix.transpose(scipy.sparse.csr_matrix(D2d))
-DT_D = D_2D_trans@D2d
-Lapl = sparse.lil_matrix(sparse.csr_matrix(DT_D)[0:(128**2),0:(128**2)])
-
-z = lambda f: ((new_I-(new_alph*-Lapl))*f).ravel()
-
-A = LinearOperator((128**2,128**2),matvec = z)
-
-ATg = lambda g: (new_I@sparse.csr_matrix(g_new)).toarray().ravel()
-
-counter = gmres_counter()
-
-gmresOutput = gmres(A,ATg(g), x0 = np.zeros((128,128)).ravel(), callback=counter, atol=1e-06)
-
-grecon = np.reshape(gmresOutput[0],(128,128))
-plt.figure(9)
-plt.imshow(grecon)
 
 plt.show()
